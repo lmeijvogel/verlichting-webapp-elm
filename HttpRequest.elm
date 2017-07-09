@@ -6,6 +6,7 @@ import Html.Events exposing (onInput, onClick)
 import Regex exposing (..)
 
 import Json.Decode exposing(..)
+import Programme exposing (Programme)
 
 main = Html.program { init = init,
                       view = view,
@@ -15,11 +16,6 @@ main = Html.program { init = init,
 
 -- MODEL
 
-type alias Programme =
-  {
-    id: String,
-    name: String
-  }
 
 type alias Model =
   { availableProgrammes: List Programme }
