@@ -32,6 +32,7 @@ type Msg
   = RequestProgrammes
   | ProgrammesReceived (Result Http.Error (List Programme))
   | CurrentProgrammeReceived (Result Http.Error String)
+  | ProgrammeClicked Programme
 
 update : Msg -> Model -> (Model, Cmd Msg)
 update msg model =
@@ -46,6 +47,8 @@ update msg model =
       ( { model | currentProgramme = id }, Cmd.none )
     CurrentProgrammeReceived (Err _) ->
       ( model, Cmd.none )
+    ProgrammeClicked programme ->
+      ( { model | currentProgramme = programme.id }, Cmd.none )
 
 getAvailableProgrammes : Cmd Msg
 getAvailableProgrammes =
@@ -88,7 +91,7 @@ programmeEntry programme currentProgramme =
         else
           programme.name
   in
-      li [] [text buttonText]
+      li [onClick (ProgrammeClicked programme)] [text buttonText]
 
 subscriptions : Model -> Sub Msg
 subscriptions model =
