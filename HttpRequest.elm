@@ -1,4 +1,3 @@
-import Array
 import Http
 import Json.Decode as Decode
 import Html exposing (..)
