@@ -1,12 +1,11 @@
 import Http
-import Json.Decode as Decode
 import Html exposing (..)
 import Html.Attributes exposing (..)
 import Html.Events exposing (onInput, onClick)
 import Regex exposing (..)
 
-import Json.Decode exposing(..)
 import Programme exposing (Programme)
+import CustomJsonDecoders exposing (availableProgrammes)
 
 main = Html.program { init = init,
                       view = view,
@@ -47,24 +46,12 @@ getAvailableProgrammes =
       url = "/available_programmes.json"
 
       request =
-        Http.get url (field "availableProgrammes" programmeList)
+        Http.get url availableProgrammes
   in
     Http.send ProgrammesReceived request
 
-
-programmeList : Decoder (List Programme)
-programmeList =
   let
-      tupleToProgramme : (String, String) -> Programme
-      tupleToProgramme (id, name) = Programme id name
-
-      convert : List (String, String) -> Decoder (List Programme)
-      convert tupleList = Decode.succeed (List.map tupleToProgramme tupleList)
-
   in
-      keyValuePairs(string)
-      |> Decode.andThen convert
-      |> Decode.map List.reverse
 
 -- VIEW
 
