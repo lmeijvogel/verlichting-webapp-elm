@@ -1,0 +1,15 @@
+{
+  "name": "verlichting",
+  "version": "1.0.0",
+  "description": "Elm implementation of my lights manager",
+  "main": "index.js",
+  "dependencies": {
+    "elm": "^0.18.0"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Lennaert Meijvogel",
+  "license": "MIT"
+}
