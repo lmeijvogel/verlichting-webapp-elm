@@ -1,4 +1,4 @@
-module CustomJsonDecoders exposing (availableProgrammes)
+module CustomJsonDecoders exposing (availableProgrammes, currentProgramme)
 
 import Json.Decode as Decode
 import Json.Decode exposing(..)
@@ -18,3 +18,6 @@ availableProgrammes =
       field "availableProgrammes" (keyValuePairs(string))
       |> Decode.andThen convert
       |> Decode.map List.reverse
+
+currentProgramme : Decoder String
+currentProgramme = field "programme" string

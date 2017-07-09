@@ -5,7 +5,7 @@ import Html.Events exposing (onInput, onClick)
 import Regex exposing (..)
 
 import Programme exposing (Programme)
-import CustomJsonDecoders exposing (availableProgrammes)
+import CustomJsonDecoders exposing (availableProgrammes, currentProgramme)
 
 main = Html.program { init = init,
                       view = view,
@@ -15,13 +15,15 @@ main = Html.program { init = init,
 
 -- MODEL
 
-
 type alias Model =
-  { availableProgrammes: List Programme }
+  {
+    availableProgrammes: List Programme
+  , currentProgramme : String
+  }
 
 init : (Model, Cmd Msg)
 init =
-  (Model [], getAvailableProgrammes)
+  (Model [] "", getAvailableProgrammes)
 
 
 -- UPDATE
@@ -29,6 +31,7 @@ init =
 type Msg
   = RequestProgrammes
   | ProgrammesReceived (Result Http.Error (List Programme))
+  | CurrentProgrammeReceived (Result Http.Error String)
 
 update : Msg -> Model -> (Model, Cmd Msg)
 update msg model =
@@ -36,8 +39,12 @@ update msg model =
     RequestProgrammes ->
       (model, getAvailableProgrammes)
     ProgrammesReceived (Ok availableProgrammes) ->
-      ( { model | availableProgrammes = availableProgrammes }, Cmd.none)
+      ( { model | availableProgrammes = availableProgrammes }, getCurrentProgramme)
     ProgrammesReceived (Err _) ->
+      ( model, Cmd.none )
+    CurrentProgrammeReceived (Ok id) ->
+      ( { model | currentProgramme = id }, Cmd.none )
+    CurrentProgrammeReceived (Err _) ->
       ( model, Cmd.none )
 
 getAvailableProgrammes : Cmd Msg
@@ -50,18 +57,38 @@ getAvailableProgrammes =
   in
     Http.send ProgrammesReceived request
 
+getCurrentProgramme : Cmd Msg
+getCurrentProgramme =
   let
+      url = "/current_programme.json"
+      request =
+        Http.get url currentProgramme
   in
+      Http.send CurrentProgrammeReceived request
 
 -- VIEW
 
 view : Model -> Html Msg
 view model =
-  div []
-    [ h2 [] [text "Available programmes"]
-    , ul []
-        (List.map (\programme -> li [] [text programme.name]) model.availableProgrammes)
+  body [] [
+    node "link" [rel "stylesheet", href "style.css"] [],
+    div []
+      [ h2 [] [text "Available programmes"]
+      , ul []
+          (List.map (\programme -> programmeEntry programme model.currentProgramme) model.availableProgrammes)
+      ]
     ]
+
+programmeEntry : Programme -> String -> Html Msg
+programmeEntry programme currentProgramme =
+  let
+      buttonText =
+        if programme.id == currentProgramme then
+          programme.name ++ " (current) "
+        else
+          programme.name
+  in
+      li [] [text buttonText]
 
 subscriptions : Model -> Sub Msg
 subscriptions model =
