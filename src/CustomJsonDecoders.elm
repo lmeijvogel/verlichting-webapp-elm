@@ -1,9 +1,16 @@
-module CustomJsonDecoders exposing (availableProgrammes, currentProgramme)
+module CustomJsonDecoders exposing (availableProgrammes, currentProgramme, activationResponse, PostProgrammeResult)
 
 import Json.Decode as Decode
 import Json.Decode exposing(..)
 
 import Programme exposing (Programme)
+
+type alias PostProgrammeResult =
+  {
+    success: Bool,
+    programme: String,
+    recipients: Int
+  }
 
 availableProgrammes : Decoder (List Programme)
 availableProgrammes =
@@ -21,3 +28,9 @@ availableProgrammes =
 
 currentProgramme : Decoder String
 currentProgramme = field "programme" string
+
+activationResponse : Decoder PostProgrammeResult
+activationResponse = map3 PostProgrammeResult
+                      (field "success" bool)
+                      (field "programme" string)
+                      (field "recipients" int)
