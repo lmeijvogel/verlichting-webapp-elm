@@ -53,7 +53,7 @@ update msg model =
 getAvailableProgrammes : Cmd Msg
 getAvailableProgrammes =
   let
-      url = "/available_programmes.json"
+      url = "/my_zwave/available_programmes"
 
       request =
         Http.get url availableProgrammes
@@ -63,7 +63,7 @@ getAvailableProgrammes =
 getCurrentProgramme : Cmd Msg
 getCurrentProgramme =
   let
-      url = "/current_programme.json"
+      url = "/my_zwave/current_programme"
       request =
         Http.get url currentProgramme
   in
