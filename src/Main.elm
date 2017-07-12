@@ -19,11 +19,12 @@ type alias Model =
   {
     availableProgrammes: List Programme
   , currentProgramme : String
+  , error: String
   }
 
 init : (Model, Cmd Msg)
 init =
-  (Model [] "", getAvailableProgrammes)
+  (Model [] "" "", getAvailableProgrammes)
 
 
 -- UPDATE
@@ -42,11 +43,11 @@ update msg model =
     ProgrammesReceived (Ok availableProgrammes) ->
       ( { model | availableProgrammes = availableProgrammes }, getCurrentProgramme)
     ProgrammesReceived (Err _) ->
-      ( model, Cmd.none )
+      ( { model | error = "Could not retrieve programmes list" }, Cmd.none )
     CurrentProgrammeReceived (Ok id) ->
       ( { model | currentProgramme = id }, Cmd.none )
     CurrentProgrammeReceived (Err _) ->
-      ( model, Cmd.none )
+      ( { model | error = "Could not retrieve current programme" }, Cmd.none )
     ProgrammeClicked programme ->
       ( { model | currentProgramme = programme.id }, Cmd.none )
 
@@ -79,6 +80,7 @@ view model =
       [ h2 [] [text "Available programmes"]
       , ul []
           (List.map (\programme -> programmeEntry programme model.currentProgramme) model.availableProgrammes)
+      , div [] [ text model.error ]
       ]
     ]
 
