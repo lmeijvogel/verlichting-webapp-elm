@@ -6,8 +6,11 @@
   "dependencies": {
     "elm": "^0.18.0"
   },
-  "devDependencies": {},
+  "devDependencies": {
+    "chokidar-cli": "^1.2.0"
+  },
   "scripts": {
+    "watch": "chokidar src/ -c 'elm make src/Main.elm --output=out/main.js'",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "Lennaert Meijvogel",
