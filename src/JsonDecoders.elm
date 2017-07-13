@@ -1,4 +1,4 @@
-module CustomJsonDecoders exposing (availableProgrammes, currentProgramme, activationResponse, PostProgrammeResult)
+module JsonDecoders exposing (availableProgrammes, currentProgramme, activationResponse, PostProgrammeResult)
 
 import Json.Decode as Decode
 import Json.Decode exposing(..)

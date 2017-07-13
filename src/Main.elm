@@ -5,7 +5,7 @@ import Html.Events exposing (onInput, onClick)
 import Regex exposing (..)
 
 import Programme exposing (Programme)
-import CustomJsonDecoders exposing (availableProgrammes, currentProgramme, activationResponse, PostProgrammeResult)
+import JsonDecoders
 
 main = Html.program { init = init,
                       view = view,
@@ -35,7 +35,7 @@ type Msg
   | ProgrammesReceived (Result Http.Error (List Programme))
   | CurrentProgrammeReceived (Result Http.Error String)
   | ProgrammeClicked Programme
-  | ActivationResponseReceived (Result Http.Error PostProgrammeResult)
+  | ActivationResponseReceived (Result Http.Error JsonDecoders.PostProgrammeResult)
 
 update : Msg -> Model -> (Model, Cmd Msg)
 update msg model =
@@ -66,7 +66,7 @@ getAvailableProgrammes =
       url = "/my_zwave/available_programmes"
 
       request =
-        Http.get url availableProgrammes
+        Http.get url JsonDecoders.availableProgrammes
   in
     Http.send ProgrammesReceived request
 
@@ -75,7 +75,7 @@ getCurrentProgramme =
   let
       url = "/my_zwave/current_programme"
       request =
-        Http.get url currentProgramme
+        Http.get url JsonDecoders.currentProgramme
   in
       Http.send CurrentProgrammeReceived request
 
@@ -84,7 +84,7 @@ activateProgramme programme =
   let
       url = "/my_zwave/programme/" ++ programme.id ++ "/start"
       request =
-        Http.post url Http.emptyBody activationResponse
+        Http.post url Http.emptyBody JsonDecoders.activationResponse
   in
       Http.send ActivationResponseReceived request
 
