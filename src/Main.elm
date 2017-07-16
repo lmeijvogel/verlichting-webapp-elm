@@ -5,6 +5,7 @@ import Html.Events exposing (onInput, onClick)
 import Regex exposing (..)
 
 import Programme exposing (Programme)
+import Light exposing (..)
 import JsonDecoders
 
 main = Html.program { init = init,
@@ -20,12 +21,13 @@ type alias Model =
     availableProgrammes: List Programme
   , currentProgramme : String
   , pendingProgramme : String
-  , error: String
+  , lights : List Light
+  , error : String
   }
 
 init : (Model, Cmd Msg)
 init =
-  (Model [] "" "" "", getAvailableProgrammes)
+  (Model [] "" "" [] "", Cmd.batch [getAvailableProgrammes, loadLights])
 
 
 -- UPDATE
@@ -36,6 +38,7 @@ type Msg
   | CurrentProgrammeReceived (Result Http.Error String)
   | ProgrammeClicked Programme
   | ActivationResponseReceived (Result Http.Error JsonDecoders.PostProgrammeResult)
+  | LightsReceived (Result Http.Error (List Light))
 
 update : Msg -> Model -> (Model, Cmd Msg)
 update msg model =
@@ -54,11 +57,15 @@ update msg model =
       ( { model | pendingProgramme = programme.id }, activateProgramme programme )
     ActivationResponseReceived (Ok result) ->
       if result.success then
-        ( { model | currentProgramme = result.programme, pendingProgramme = "" }, Cmd.none )
+        ( { model | currentProgramme = result.programme, pendingProgramme = "" }, loadLights )
       else
         ( { model | error = "Result was not success" }, Cmd.none)
     ActivationResponseReceived (Err _) ->
       ( { model | error = "An error occurred" }, Cmd.none)
+    LightsReceived (Ok lights) ->
+      ( { model | lights = lights }, Cmd.none)
+    LightsReceived (Err error) ->
+      ( { model | error = (toString error)}, Cmd.none)
 
 getAvailableProgrammes : Cmd Msg
 getAvailableProgrammes =
@@ -88,6 +95,15 @@ activateProgramme programme =
   in
       Http.send ActivationResponseReceived request
 
+loadLights : Cmd Msg
+loadLights =
+  let
+      url = "/my_zwave/current_lights"
+      request =
+        Http.get url JsonDecoders.lights
+  in
+      Http.send LightsReceived request
+
 -- VIEW
 
 view : Model -> Html Msg
@@ -98,6 +114,8 @@ view model =
       [ h2 [] [text "Available programmes"]
       , ul []
           (List.map (\programme -> programmeEntry programme model.currentProgramme model.pendingProgramme) model.availableProgrammes)
+      , ul []
+          (List.map (\light -> lightEntry light) model.lights)
       , div [] [ text model.error ]
       ]
     ]
@@ -115,8 +133,23 @@ programmeEntry programme currentProgramme pendingProgramme =
   in
       li [onClick (ProgrammeClicked programme)] [text buttonText]
 
+lightEntry : Light -> Html Msg
+lightEntry light =
+  case light of
+    SwitchableLight _ name _ state ->
+      let onOffDisplay =
+            case state of
+              True -> "On"
+              False -> "-"
+      in
+        li [] [text (name ++ " (" ++ onOffDisplay ++ ")")]
+    DimmableLight _ name _ intensity ->
+      let intensityDisplay =
+            if intensity == 0 then "-"
+            else (toString intensity)
+      in
+        li [] [text (name ++ " (" ++ intensityDisplay ++ ")")]
+
 subscriptions : Model -> Sub Msg
 subscriptions model =
   Sub.none
-
-
