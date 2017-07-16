@@ -7,33 +7,45 @@ import Regex exposing (..)
 import Programme exposing (Programme)
 import Light exposing (..)
 import JsonDecoders
+import Json.Encode
 
 main = Html.program { init = init,
                       view = view,
                       update = update,
                       subscriptions = subscriptions
                     }
+type alias LoginModel =
+  {
+    username: String,
+    password: String
+  }
 
 -- MODEL
 
 type alias Model =
   {
-    availableProgrammes: List Programme
+    loggedIn : Bool
+  , availableProgrammes: List Programme
   , currentProgramme : String
   , pendingProgramme : String
   , lights : List Light
   , error : String
+  , loginData : LoginModel
   }
 
 init : (Model, Cmd Msg)
 init =
-  (Model [] "" "" [] "", Cmd.batch [getAvailableProgrammes, loadLights])
+  (Model False [] "" "" [] "" (LoginModel "" ""), checkLoggedIn)
 
 
 -- UPDATE
 
 type Msg
-  = ProgrammesReceived (Result Http.Error (List Programme))
+  = LoginChecked (Result Http.Error JsonDecoders.LoginState)
+  | UsernameChanged String
+  | PasswordChanged String
+  | SubmitLogin
+  | ProgrammesReceived (Result Http.Error (List Programme))
   | CurrentProgrammeReceived (Result Http.Error String)
   | ProgrammeClicked Programme
   | ActivationResponseReceived (Result Http.Error JsonDecoders.PostProgrammeResult)
@@ -44,8 +56,8 @@ update msg model =
   case msg of
     ProgrammesReceived (Ok availableProgrammes) ->
       ( { model | availableProgrammes = availableProgrammes }, getCurrentProgramme)
-    ProgrammesReceived (Err _) ->
-      ( { model | error = "Could not retrieve programmes list" }, Cmd.none )
+    ProgrammesReceived (Err error) ->
+      ( { model | error = "Could not retrieve programmes list: " ++ (toString error) }, Cmd.none )
     CurrentProgrammeReceived (Ok id) ->
       ( { model | currentProgramme = id }, Cmd.none )
     CurrentProgrammeReceived (Err _) ->
@@ -63,6 +75,51 @@ update msg model =
       ( { model | lights = lights }, Cmd.none)
     LightsReceived (Err error) ->
       ( { model | error = (toString error)}, Cmd.none)
+    LoginChecked (Ok loginState) ->
+      let
+          nextCommand = if loginState.loggedIn then Cmd.batch [getAvailableProgrammes, loadLights]
+                        else Cmd.none
+      in
+        ( { model | loggedIn = loginState.loggedIn }, nextCommand )
+    LoginChecked (Err error) ->
+      ( { model | loggedIn = False, error = "Not logged in" }, Cmd.none)
+    UsernameChanged username ->
+      let loginData = model.loginData
+      in
+        ( { model | loginData = { loginData | username = username } }, Cmd.none )
+    PasswordChanged password ->
+      let loginData = model.loginData
+      in
+        ( { model | loginData = { loginData | password = password } }, Cmd.none )
+    SubmitLogin ->
+      ( model, logIn model )
+
+
+checkLoggedIn : Cmd Msg
+checkLoggedIn =
+  let
+      url = "/my_zwave/login/show"
+      request =
+        Http.get url JsonDecoders.checkLogin
+  in
+      Http.send LoginChecked request
+
+logIn : Model -> Cmd Msg
+logIn model =
+  let
+      url = "/my_zwave/login/create"
+      requestData = [
+        ("username", Json.Encode.string model.loginData.username),
+        ("password", Json.Encode.string model.loginData.password)
+      ]
+       |> Json.Encode.object
+       |> Http.jsonBody
+
+      request =
+        Http.post url requestData JsonDecoders.checkLogin
+  in
+      Http.send LoginChecked request
+
 
 getAvailableProgrammes : Cmd Msg
 getAvailableProgrammes =
@@ -107,15 +164,36 @@ view : Model -> Html Msg
 view model =
   body [] [
     node "link" [rel "stylesheet", href "style.css"] [],
-    div []
-      [ h2 [] [text "Available programmes"]
-      , ul []
-          (List.map (\programme -> programmeEntry programme model.currentProgramme model.pendingProgramme) model.availableProgrammes)
-      , ul []
-          (List.map (\light -> lightEntry light) model.lights)
-      , div [] [ text model.error ]
-      ]
+      (if model.loggedIn then
+        div []
+          [ h2 [] [text "Available programmes"]
+          , ul []
+              (List.map (\programme -> programmeEntry programme model.currentProgramme model.pendingProgramme) model.availableProgrammes)
+          , ul []
+              (List.map (\light -> lightEntry light) model.lights)
+          , div [] [ text model.error ]
+          ]
+      else
+        loginScreen model.loginData
+      )
     ]
+
+loginScreen : LoginModel -> Html Msg
+loginScreen loginData =
+  div [] [
+    div [] [
+      label [] [text "Username"]
+    , input [placeholder "Username", onInput UsernameChanged] []
+    ]
+    , div [] [
+      label [] [text "Password"]
+    , input [type_ "password", placeholder "Password", onInput PasswordChanged] []
+    ]
+    , div [] [
+      button [ onClick SubmitLogin ] [ text "Submit" ]
+    ]
+
+  ]
 
 programmeEntry : Programme -> String -> String -> Html Msg
 programmeEntry programme currentProgramme pendingProgramme =
