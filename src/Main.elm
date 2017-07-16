@@ -33,8 +33,7 @@ init =
 -- UPDATE
 
 type Msg
-  = RequestProgrammes
-  | ProgrammesReceived (Result Http.Error (List Programme))
+  = ProgrammesReceived (Result Http.Error (List Programme))
   | CurrentProgrammeReceived (Result Http.Error String)
   | ProgrammeClicked Programme
   | ActivationResponseReceived (Result Http.Error JsonDecoders.PostProgrammeResult)
@@ -43,8 +42,6 @@ type Msg
 update : Msg -> Model -> (Model, Cmd Msg)
 update msg model =
   case msg of
-    RequestProgrammes ->
-      (model, getAvailableProgrammes)
     ProgrammesReceived (Ok availableProgrammes) ->
       ( { model | availableProgrammes = availableProgrammes }, getCurrentProgramme)
     ProgrammesReceived (Err _) ->
