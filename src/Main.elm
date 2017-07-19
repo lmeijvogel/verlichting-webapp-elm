@@ -35,7 +35,15 @@ type alias Model =
 
 init : (Model, Cmd Msg)
 init =
-  (Model False [] "" "" [] "" (LoginModel "" ""), checkLoggedIn)
+  ({
+    loggedIn = False,
+    availableProgrammes = [],
+    currentProgramme = "",
+    pendingProgramme = "",
+    lights = [],
+    error = "",
+    loginData = (LoginModel "" "")
+  }, checkLoggedIn)
 
 
 -- UPDATE
