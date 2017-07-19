@@ -264,28 +264,44 @@ lightEntry light =
           DimmableLight _ _ _ intensity ->
             if intensity == 0 then "-"
             else (toString intensity)
+
       name = case light of
         SwitchableLight _ lightName _ _ -> lightName
-        DimmableLight _ lightName _ _ -> lightName
+        DimmableLight   _ lightName _ _ -> lightName
+
+      chipBackgroundColor = case valueDisplay of
+        "-" -> Color.color Color.Blue  Color.S100
+        _   -> Color.color Color.Amber Color.S600
+
+      valueBackgroundColor = case valueDisplay of
+        "-" -> Color.color Color.Blue   Color.S100
+        _   -> Color.color Color.Yellow Color.S300
+
+      valueForegroundColor = case valueDisplay of
+        "-" -> Color.white
+        _   -> Color.black
+
 
   in
       compactListItem [] [
         MatList.content [] [
           Chip.span [
             Options.css "width" "100%"
+          , Color.background (chipBackgroundColor)
+
           ]
           [
             Chip.contact Html.span
             [
-              Color.background Color.primary
-            , Color.text Color.white
+              Color.background valueBackgroundColor
+            , Color.text valueForegroundColor
             ]
             [ text valueDisplay ]
-            , Chip.content []
-              [text name ]
-            ]
+            , Chip.content [ ]
+            [text name ]
           ]
         ]
+      ]
 
 subscriptions : Model -> Sub Msg
 subscriptions model =
