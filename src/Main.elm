@@ -224,6 +224,12 @@ loginScreen loginData =
 
   ]
 
+compactListItem : List (Options.Property c m) -> List (Html m) -> Html m
+compactListItem listStyles = MatList.li [
+      Options.css "padding-top" "0",
+      Options.css "padding-bottom" "0"
+    ]
+
 programmeEntry : Programme -> Material.Model -> String -> String -> Html Msg
 programmeEntry programme mdl currentProgramme pendingProgramme =
   let
@@ -235,10 +241,7 @@ programmeEntry programme mdl currentProgramme pendingProgramme =
         else
           []
   in
-        MatList.li [
-            Options.css "padding-top" "0",
-            Options.css "padding-bottom" "0"
-          ] [
+        compactListItem [] [
           MatList.content [
           ] [
             Button.render Mdl
@@ -266,11 +269,7 @@ lightEntry light =
         DimmableLight _ lightName _ _ -> lightName
 
   in
-      MatList.li [
-        Options.css "padding-top" "0",
-        Options.css "padding-bottom" "0"
-      ]
-      [
+      compactListItem [] [
         MatList.content [] [
           Chip.span [
             Options.css "width" "100%"
