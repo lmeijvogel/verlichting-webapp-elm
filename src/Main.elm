@@ -1,7 +1,18 @@
 import Http
-import Html exposing (..)
-import Html.Attributes exposing (..)
+
+import Html exposing (Html, ul, li, div, p, text, button, label, input)
+import Html.Attributes exposing (placeholder, href, rel, type_)
 import Html.Events exposing (onInput, onClick)
+
+import Material
+import Material.Scheme
+import Material.Button as Button
+import Material.Chip as Chip
+import Material.Color as Color
+import Material.List as MatList
+import Material.Options as Options exposing (css)
+import Material.Typography as Typo
+
 import Regex exposing (..)
 
 import Programme exposing (Programme)
@@ -31,6 +42,8 @@ type alias Model =
   , lights : List Light
   , error : String
   , loginData : LoginModel
+
+  , mdl : Material.Model
   }
 
 init : (Model, Cmd Msg)
@@ -42,7 +55,8 @@ init =
     pendingProgramme = "",
     lights = [],
     error = "",
-    loginData = (LoginModel "" "")
+    loginData = (LoginModel "" ""),
+    mdl = Material.model
   }, checkLoggedIn)
 
 
@@ -53,11 +67,15 @@ type Msg
   | UsernameChanged String
   | PasswordChanged String
   | SubmitLogin
+
   | ProgrammesReceived (Result Http.Error (List Programme))
   | CurrentProgrammeReceived (Result Http.Error String)
   | ProgrammeClicked Programme
   | ActivationResponseReceived (Result Http.Error JsonDecoders.PostProgrammeResult)
+
   | LightsReceived (Result Http.Error (List Light))
+
+  | Mdl (Material.Msg Msg)
 
 update : Msg -> Model -> (Model, Cmd Msg)
 update msg model =
@@ -102,6 +120,9 @@ update msg model =
     SubmitLogin ->
       ( model, logIn model )
 
+    -- Boilerplate: Mdl action handler.
+    Mdl msg_ ->
+        Material.update Mdl msg_ model
 
 checkLoggedIn : Cmd Msg
 checkLoggedIn =
@@ -168,23 +189,23 @@ loadLights =
 
 -- VIEW
 
+type alias Mdl = Material.Model
+
 view : Model -> Html Msg
 view model =
-  body [] [
-    node "link" [rel "stylesheet", href "style.css"] [],
-      (if model.loggedIn then
-        div []
-          [ h2 [] [text "Available programmes"]
-          , ul []
-              (List.map (\programme -> programmeEntry programme model.currentProgramme model.pendingProgramme) model.availableProgrammes)
-          , ul []
-              (List.map (\light -> lightEntry light) model.lights)
-          , div [] [ text model.error ]
-          ]
-      else
-        loginScreen model.loginData
-      )
-    ]
+    (if model.loggedIn then
+      div []
+        [ Options.styled p [ Typo.title] [text "Programmes"]
+        , MatList.ul []
+            (List.map (\programme -> programmeEntry programme model.mdl model.currentProgramme model.pendingProgramme) model.availableProgrammes)
+        , MatList.ul []
+            (List.map (\light -> lightEntry light) model.lights)
+        , div [] [ text model.error ]
+        ]
+        |> Material.Scheme.top
+    else
+      loginScreen model.loginData
+    )
 
 loginScreen : LoginModel -> Html Msg
 loginScreen loginData =
@@ -203,35 +224,69 @@ loginScreen loginData =
 
   ]
 
-programmeEntry : Programme -> String -> String -> Html Msg
-programmeEntry programme currentProgramme pendingProgramme =
+programmeEntry : Programme -> Material.Model -> String -> String -> Html Msg
+programmeEntry programme mdl currentProgramme pendingProgramme =
   let
-      buttonText =
+      buttonStyles = [ Options.css "width" "100%" ] ++
         if programme.id == currentProgramme then
-          programme.name ++ " (current)"
+          [ Button.ripple, Button.colored, Button.raised ]
         else if programme.id == pendingProgramme then
-          programme.name ++ " (pending)"
+          [ Button.ripple, Button.raised ]
         else
-          programme.name
+          []
   in
-      li [onClick (ProgrammeClicked programme)] [text buttonText]
+        MatList.li [
+            Options.css "padding-top" "0",
+            Options.css "padding-bottom" "0"
+          ] [
+          MatList.content [
+          ] [
+            Button.render Mdl
+              [ 0 ]
+              mdl
+              (List.concat [ [
+                Options.onClick (ProgrammeClicked programme)
+              ], buttonStyles ] )
+              [ text programme.name ]
+          ]
+        ]
 
 lightEntry : Light -> Html Msg
 lightEntry light =
-  case light of
-    SwitchableLight _ name _ state ->
-      let onOffDisplay =
-            case state of
-              True -> "On"
-              False -> "-"
-      in
-        li [] [text (name ++ " (" ++ onOffDisplay ++ ")")]
-    DimmableLight _ name _ intensity ->
-      let intensityDisplay =
+  let
+      valueDisplay = case light of
+          SwitchableLight _ _ _ state ->
+            if state then "On"
+            else "-"
+          DimmableLight _ _ _ intensity ->
             if intensity == 0 then "-"
             else (toString intensity)
-      in
-        li [] [text (name ++ " (" ++ intensityDisplay ++ ")")]
+      name = case light of
+        SwitchableLight _ lightName _ _ -> lightName
+        DimmableLight _ lightName _ _ -> lightName
+
+  in
+      MatList.li [
+        Options.css "padding-top" "0",
+        Options.css "padding-bottom" "0"
+      ]
+      [
+        MatList.content [] [
+          Chip.span [
+            Options.css "width" "100%"
+          ]
+          [
+            Chip.contact Html.span
+            [
+              Color.background Color.primary
+            , Color.text Color.white
+            ]
+            [ text valueDisplay ]
+            , Chip.content []
+              [text name ]
+            ]
+          ]
+        ]
 
 subscriptions : Model -> Sub Msg
 subscriptions model =
