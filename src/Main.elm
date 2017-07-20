@@ -5,7 +5,6 @@ import Html.Attributes exposing (placeholder, href, rel, type_)
 import Html.Events exposing (onInput, onClick)
 
 import Material
-import Material.Scheme
 import Material.Button as Button
 import Material.Card as Card
 import Material.Chip as Chip
@@ -208,7 +207,7 @@ view model =
             programmesCard model
           , lightsCard model
             --, div [] [ text model.error ]
-          ] |> Material.Scheme.top
+          ]
           ]
           else
             [ loginScreen model.loginData ]
