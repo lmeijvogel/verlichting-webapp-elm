@@ -9,6 +9,7 @@ import Material.Button as Button
 import Material.Card as Card
 import Material.Chip as Chip
 import Material.Color as Color
+import Material.Grid as Grid
 import Material.Layout as Layout
 import Material.List as MatList
 import Material.Options as Options exposing (css)
@@ -200,18 +201,23 @@ view model =
     { header = [ Layout.row [ Typo.title ] [ text "Verlichting" ] ]
     , drawer = []
     , tabs = ([], [])
-    , main =
+    , main = [
         (if model.loggedIn then
-          [
           div [] [
-            programmesCard model
-          , lightsCard model
+            Grid.grid [] [
+              Grid.cell [ Grid.size Grid.Phone 4, Grid.size Grid.Tablet 8, Grid.size Grid.Desktop 6 ] [
+                programmesCard model
+              ],
+              Grid.cell [ Grid.size Grid.Phone 4, Grid.size Grid.Tablet 8, Grid.size Grid.Desktop 6 ] [
+                lightsCard model
+              ]
+            ]
             --, div [] [ text model.error ]
           ]
-          ]
-          else
-            [ loginScreen model.loginData ]
-          )
+        else
+          loginScreen model.loginData
+        )
+      ]
     }
 
 programmesCard : Model -> Html Msg
