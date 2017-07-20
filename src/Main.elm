@@ -205,30 +205,37 @@ view model =
         (if model.loggedIn then
           [
           div [] [
-            Card.view [] [
-              Card.title [] [
-                Options.styled p [ Typo.title] [text "Programma's"]
-              ]
-            , Card.text [] [
-                MatList.ul []
-                    (List.map (\programme -> programmeEntry programme model.mdl model.currentProgramme model.pendingProgramme) model.availableProgrammes)
-                ]
-            ],
-            Card.view [] [
-              Card.title [] [
-                Options.styled p [ Typo.title] [ text "Lichten"]
-              ],
-              Card.text [] [
-                MatList.ul []
-                  (List.map (\light -> lightEntry light) model.lights)
-              ]
-            ]
+            programmesCard model
+          , lightsCard model
+            --, div [] [ text model.error ]
           ] |> Material.Scheme.top
           ]
           else
             [ loginScreen model.loginData ]
           )
     }
+
+programmesCard : Model -> Html Msg
+programmesCard model = Card.view [] [
+  Card.title [] [
+    Options.styled p [ Typo.title] [text "Programma's"]
+  ],
+  Card.text [] [
+    MatList.ul []
+        (List.map (\programme -> programmeEntry programme model.mdl model.currentProgramme model.pendingProgramme) model.availableProgrammes)
+    ]
+  ]
+
+lightsCard : Model -> Html Msg
+lightsCard model = Card.view [] [
+    Card.title [] [
+      Options.styled p [ Typo.title] [ text "Lichten"]
+    ],
+    Card.text [] [
+      MatList.ul []
+        (List.map (\light -> lightEntry light) model.lights)
+    ]
+  ]
 
 loginScreen : LoginModel -> Html Msg
 loginScreen loginData =
