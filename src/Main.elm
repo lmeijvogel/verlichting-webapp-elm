@@ -13,6 +13,7 @@ import Material.Grid as Grid
 import Material.Layout as Layout
 import Material.List as MatList
 import Material.Options as Options exposing (css)
+import Material.Textfield as Textfield
 import Material.Typography as Typo
 
 import Regex exposing (..)
@@ -215,10 +216,42 @@ view model =
             --, div [] [ text model.error ]
           ]
         else
-          loginScreen model.loginData
+          loginCard model
         )
       ]
     }
+
+loginCard : Model -> Html Msg
+loginCard model = Card.view [] [
+  Card.title [] [
+    Options.styled p [ Typo.title] [text "Please login"]
+  ],
+  Card.text [] [
+    div [] [
+      Textfield.render Mdl [0] model.mdl
+      [ Textfield.label "Username"
+      , Textfield.floatingLabel
+      , Textfield.text_
+      , Options.onInput UsernameChanged
+      ]
+      [],
+      Textfield.render Mdl [1] model.mdl
+      [ Textfield.label "Password"
+      , Textfield.floatingLabel
+      , Textfield.password
+      , Options.onInput PasswordChanged
+      ]
+      []
+    , div [] [
+      Button.render Mdl [2] model.mdl
+      [ Button.raised
+      , Options.onClick SubmitLogin
+      ]
+      [ text "Log in"]
+    ]
+  ]
+  ]
+  ]
 
 programmesCard : Model -> Html Msg
 programmesCard model = Card.view [] [
@@ -240,23 +273,6 @@ lightsCard model = Card.view [] [
       MatList.ul []
         (List.map (\light -> lightEntry light) model.lights)
     ]
-  ]
-
-loginScreen : LoginModel -> Html Msg
-loginScreen loginData =
-  div [] [
-    div [] [
-      label [] [text "Username"]
-    , input [placeholder "Username", onInput UsernameChanged] []
-    ]
-    , div [] [
-      label [] [text "Password"]
-    , input [type_ "password", placeholder "Password", onInput PasswordChanged] []
-    ]
-    , div [] [
-      button [ onClick SubmitLogin ] [ text "Submit" ]
-    ]
-
   ]
 
 compactListItem : List (Options.Property c m) -> List (Html m) -> Html m
