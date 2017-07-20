@@ -7,8 +7,10 @@ import Html.Events exposing (onInput, onClick)
 import Material
 import Material.Scheme
 import Material.Button as Button
+import Material.Card as Card
 import Material.Chip as Chip
 import Material.Color as Color
+import Material.Layout as Layout
 import Material.List as MatList
 import Material.Options as Options exposing (css)
 import Material.Typography as Typo
@@ -193,19 +195,40 @@ type alias Mdl = Material.Model
 
 view : Model -> Html Msg
 view model =
-    (if model.loggedIn then
-      div []
-        [ Options.styled p [ Typo.title] [text "Programmes"]
-        , MatList.ul []
-            (List.map (\programme -> programmeEntry programme model.mdl model.currentProgramme model.pendingProgramme) model.availableProgrammes)
-        , MatList.ul []
-            (List.map (\light -> lightEntry light) model.lights)
-        , div [] [ text model.error ]
-        ]
-        |> Material.Scheme.top
-    else
-      loginScreen model.loginData
-    )
+  Layout.render Mdl model.mdl
+    [ Layout.fixedHeader
+    ]
+    { header = [ Layout.row [ Typo.title ] [ text "Verlichting" ] ]
+    , drawer = []
+    , tabs = ([], [])
+    , main =
+        (if model.loggedIn then
+          [
+          div [] [
+            Card.view [] [
+              Card.title [] [
+                Options.styled p [ Typo.title] [text "Programma's"]
+              ]
+            , Card.text [] [
+                MatList.ul []
+                    (List.map (\programme -> programmeEntry programme model.mdl model.currentProgramme model.pendingProgramme) model.availableProgrammes)
+                ]
+            ],
+            Card.view [] [
+              Card.title [] [
+                Options.styled p [ Typo.title] [ text "Lichten"]
+              ],
+              Card.text [] [
+                MatList.ul []
+                  (List.map (\light -> lightEntry light) model.lights)
+              ]
+            ]
+          ] |> Material.Scheme.top
+          ]
+          else
+            [ loginScreen model.loginData ]
+          )
+    }
 
 loginScreen : LoginModel -> Html Msg
 loginScreen loginData =
