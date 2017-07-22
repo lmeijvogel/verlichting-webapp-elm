@@ -52,20 +52,22 @@ activationResponse = map3 PostProgrammeResult
 
 lights : Decoder (List Light)
 lights =
-  field "lights" (list toLight)
+  let
+    toLight : Decoder Light
+    toLight = Json.Decode.oneOf
+      [
+        map4 DimmableLight
+          (field "node_id" int)
+          (field "name" string)
+          (field "display_name" string)
+          (field "value" int)
+       ,
+        map4 SwitchableLight
+          (field "node_id" int)
+          (field "name" string)
+          (field "display_name" string)
+          (field "state" bool)
+      ]
+  in
+    field "lights" (list toLight)
 
-toLight : Decoder Light
-toLight = Json.Decode.oneOf
-  [
-    map4 DimmableLight
-      (field "node_id" int)
-      (field "name" string)
-      (field "display_name" string)
-      (field "value" int)
-   ,
-    map4 SwitchableLight
-      (field "node_id" int)
-      (field "name" string)
-      (field "display_name" string)
-      (field "state" bool)
-  ]
