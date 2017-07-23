@@ -20,6 +20,7 @@ import Regex exposing (..)
 
 import Programme exposing (Programme)
 import Light exposing (..)
+import Login
 import VacationMode exposing (VacationMode, timeOfDayToString)
 
 import JsonDecoders
@@ -30,24 +31,25 @@ main = Html.program { init = init,
                       update = update,
                       subscriptions = subscriptions
                     }
-type alias LoginModel =
+-- MODEL
+
+type alias LoginFormData =
   {
-    username: String,
-    password: String
+    username : String,
+    password : String
   }
 
--- MODEL
 
 type alias Model =
   {
-    loggedIn : Bool
+    loginState : Login.LoginState
   , availableProgrammes: List Programme
   , currentProgramme : String
   , pendingProgramme : String
   , lights : List Light
   , vacationMode: VacationMode
   , error : String
-  , loginData : LoginModel
+  , loginFormData : LoginFormData
 
   , mdl : Material.Model
   }
@@ -55,25 +57,26 @@ type alias Model =
 init : (Model, Cmd Msg)
 init =
   ({
-    loggedIn = False,
+    loginState = Login.newLoginState,
     availableProgrammes = [],
     currentProgramme = "",
     pendingProgramme = "",
     lights = [],
     vacationMode = VacationMode.new,
     error = "",
-    loginData = (LoginModel "" ""),
+    loginFormData = newLoginFormData,
     mdl = Material.model
-  }, checkLoggedIn)
+  }, Cmd.map LoginMsg Login.checkLoggedIn)
 
 
 -- UPDATE
 
 type Msg
-  = LoginChecked (Result Http.Error JsonDecoders.LoginState)
-  | UsernameChanged String
+  = UsernameChanged String
   | PasswordChanged String
   | SubmitLogin
+
+  | LoginMsg Login.Msg
 
   | ProgrammesReceived (Result Http.Error (List Programme))
   | CurrentProgrammeReceived (Result Http.Error String)
@@ -110,28 +113,25 @@ update msg model =
           (newLights, cmd) = Light.update msg model.lights
       in
         ( { model | lights = newLights }, Cmd.map LightMsg cmd )
-    LoginChecked (Ok loginState) ->
-      let
-          nextCommand = if loginState.loggedIn then Cmd.batch [
-              getAvailableProgrammes,
-              Cmd.map LightMsg Light.load,
-              Cmd.map VacationModeMsg VacationMode.load
-            ]
-                        else Cmd.none
-      in
-        ( { model | loggedIn = loginState.loggedIn }, nextCommand )
-    LoginChecked (Err error) ->
-      ( { model | loggedIn = False, error = "Not logged in" }, Cmd.none)
     UsernameChanged username ->
-      let loginData = model.loginData
+      let loginFormData = model.loginFormData
       in
-        ( { model | loginData = { loginData | username = username } }, Cmd.none )
+        ( { model | loginFormData = { loginFormData | username = username } }, Cmd.none )
     PasswordChanged password ->
-      let loginData = model.loginData
+      let loginFormData = model.loginFormData
       in
-        ( { model | loginData = { loginData | password = password } }, Cmd.none )
+        ( { model | loginFormData = { loginFormData | password = password } }, Cmd.none )
+    LoginMsg msg ->
+      let
+          (newLoginState, loginStateChanged) = Login.update msg model.loginState
+          nextCommand = if loginStateChanged then initialize else Cmd.none
+      in
+          ( { model | loginState = newLoginState }, nextCommand)
     SubmitLogin ->
-      ( model, logIn model )
+      let
+          {username, password} = model.loginFormData
+      in
+          (model, Cmd.map LoginMsg (Login.logIn username password) )
 
     VacationModeMsg msg ->
       let
@@ -143,30 +143,15 @@ update msg model =
     Mdl msg_ ->
         Material.update Mdl msg_ model
 
-checkLoggedIn : Cmd Msg
-checkLoggedIn =
-  let
-      url = "/my_zwave/login/show"
-      request =
-        Http.get url JsonDecoders.checkLogin
-  in
-      Http.send LoginChecked request
+initialize : Cmd Msg
+initialize = Cmd.batch [
+    getAvailableProgrammes,
+    Cmd.map LightMsg Light.load,
+    Cmd.map VacationModeMsg VacationMode.load
+  ]
 
-logIn : Model -> Cmd Msg
-logIn model =
-  let
-      url = "/my_zwave/login/create"
-      requestData = [
-        ("username", Json.Encode.string model.loginData.username),
-        ("password", Json.Encode.string model.loginData.password)
-      ]
-       |> Json.Encode.object
-       |> Http.jsonBody
-
-      request =
-        Http.post url requestData JsonDecoders.checkLogin
-  in
-      Http.send LoginChecked request
+newLoginFormData : LoginFormData
+newLoginFormData = (LoginFormData "" "")
 
 getAvailableProgrammes : Cmd Msg
 getAvailableProgrammes =
@@ -209,7 +194,7 @@ view model =
     , drawer = []
     , tabs = ([], [])
     , main = [
-        (if model.loggedIn then
+        (if model.loginState.loggedIn then
           div [] [
             Grid.grid [] [
               Grid.cell [ Grid.size Grid.Phone 4, Grid.size Grid.Tablet 8, Grid.size Grid.Desktop 4 ] [

@@ -1,14 +1,9 @@
-module JsonDecoders exposing (checkLogin, availableProgrammes, currentProgramme, activationResponse, vacationMode, LoginState, PostProgrammeResult, VacationModeResult)
+module JsonDecoders exposing (availableProgrammes, currentProgramme, activationResponse, vacationMode, PostProgrammeResult, VacationModeResult)
 
 import Json.Decode as Decode
 import Json.Decode exposing(..)
 
 import Programme exposing (Programme)
-
-type alias LoginState =
-  {
-    loggedIn: Bool
-  }
 
 type alias PostProgrammeResult =
   {
@@ -20,14 +15,6 @@ type alias PostProgrammeResult =
 type alias VacationModeResult = {
   state: String
 }
-
-checkLogin : Decoder LoginState
-checkLogin =
-  let
-      convert result = Decode.succeed (LoginState result)
-  in
-    (field "loggedIn" bool)
-    |> Decode.andThen convert
 
 availableProgrammes : Decoder (List Programme)
 availableProgrammes =
