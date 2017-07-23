@@ -1,4 +1,4 @@
-module JsonDecoders exposing (checkLogin, availableProgrammes, currentProgramme, activationResponse, lights, LoginState, PostProgrammeResult)
+module JsonDecoders exposing (checkLogin, availableProgrammes, currentProgramme, activationResponse, lights, vacationMode, LoginState, PostProgrammeResult, VacationModeResult)
 
 import Json.Decode as Decode
 import Json.Decode exposing(..)
@@ -18,6 +18,10 @@ type alias PostProgrammeResult =
     programme: String,
     recipients: Int
   }
+
+type alias VacationModeResult = {
+  state: String
+}
 
 checkLogin : Decoder LoginState
 checkLogin =
@@ -71,3 +75,6 @@ lights =
   in
     field "lights" (list toLight)
 
+vacationMode : Decoder (VacationModeResult)
+vacationMode =
+  map VacationModeResult ( field "state" string )

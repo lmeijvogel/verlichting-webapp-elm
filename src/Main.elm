@@ -1,7 +1,7 @@
 import Http
 
 import Html exposing (Html, ul, li, div, p, text, button, label, input)
-import Html.Attributes exposing (placeholder, href, rel, type_)
+import Html.Attributes exposing (placeholder, href, rel, type_, value)
 import Html.Events exposing (onInput, onClick)
 
 import Material
@@ -34,6 +34,48 @@ type alias LoginModel =
     password: String
   }
 
+type alias TimeOfDay =
+  {
+    hour: Int,
+    minute: Int
+  }
+
+timeOfDayToString: TimeOfDay -> String
+timeOfDayToString time =
+  let
+    hour = toString time.hour |> String.pad 2 '0'
+    minute = toString time.minute |> String.pad 2 '0'
+  in
+    hour ++ ":" ++ minute
+
+timeOfDayFromString: String -> Result String TimeOfDay
+timeOfDayFromString time =
+  let
+    timeParts = String.split ":" time
+
+    hour: Result String Int
+    hour = timeParts
+    |> List.head
+    |> Result.fromMaybe "No hour part present"
+    |> Result.andThen String.toInt
+
+    minute: Result String Int
+    minute = timeParts
+    |> List.tail
+    |> Maybe.andThen List.head
+    |> Result.fromMaybe "No minute part exists"
+    |> Result.andThen String.toInt
+
+  in
+    Result.map2 TimeOfDay hour minute
+
+type alias VacationMode =
+  {
+    state: Bool,
+    averageStartTime: TimeOfDay,
+    averageEndTime: TimeOfDay
+  }
+
 -- MODEL
 
 type alias Model =
@@ -43,10 +85,20 @@ type alias Model =
   , currentProgramme : String
   , pendingProgramme : String
   , lights : List Light
+  , vacationMode: VacationMode
   , error : String
   , loginData : LoginModel
 
   , mdl : Material.Model
+  }
+
+initialVacationMode : VacationMode
+initialVacationMode =
+  {
+    state = False,
+    averageStartTime = TimeOfDay 18 30,
+    averageEndTime = TimeOfDay 22 30
+
   }
 
 init : (Model, Cmd Msg)
@@ -57,6 +109,7 @@ init =
     currentProgramme = "",
     pendingProgramme = "",
     lights = [],
+    vacationMode = initialVacationMode,
     error = "",
     loginData = (LoginModel "" ""),
     mdl = Material.model
@@ -77,6 +130,13 @@ type Msg
   | ActivationResponseReceived (Result Http.Error JsonDecoders.PostProgrammeResult)
 
   | LightsReceived (Result Http.Error (List Light))
+
+  | VacationModeReceived (Result Http.Error (JsonDecoders.VacationModeResult) )
+  | AverageStartTimeChanged String
+  | AverageEndTimeChanged String
+
+  | EnableVacationMode
+  | DisableVacationMode
 
   | Mdl (Material.Msg Msg)
 
@@ -106,7 +166,7 @@ update msg model =
       ( { model | error = (toString error)}, Cmd.none)
     LoginChecked (Ok loginState) ->
       let
-          nextCommand = if loginState.loggedIn then Cmd.batch [getAvailableProgrammes, loadLights]
+          nextCommand = if loginState.loggedIn then Cmd.batch [getAvailableProgrammes, loadLights, loadVacationMode]
                         else Cmd.none
       in
         ( { model | loggedIn = loginState.loggedIn }, nextCommand )
@@ -122,6 +182,48 @@ update msg model =
         ( { model | loginData = { loginData | password = password } }, Cmd.none )
     SubmitLogin ->
       ( model, logIn model )
+
+    VacationModeReceived (Ok vacationModeResult) ->
+      let vacationMode = model.vacationMode
+      in
+          ( { model | vacationMode = { vacationMode | state = vacationModeResult.state == "on" } }, Cmd.none )
+
+    VacationModeReceived (Err error) ->
+      ( { model | error = toString error }, Cmd.none)
+
+    EnableVacationMode ->
+      let
+          vacationMode = model.vacationMode
+          newVacationMode = { vacationMode | state = True }
+      in
+      ( model, sendNewVacationModeState newVacationMode )
+
+    DisableVacationMode ->
+      let
+          vacationMode = model.vacationMode
+          newVacationMode = { vacationMode | state = False }
+      in
+      ( model, sendNewVacationModeState newVacationMode )
+
+    AverageStartTimeChanged startTimeString ->
+      let
+          vacationMode = model.vacationMode
+      in
+          case timeOfDayFromString startTimeString of
+            Ok time ->
+              ( { model | vacationMode = { vacationMode | averageStartTime = time } }, Cmd.none )
+            Err string ->
+              ( { model | error = "Invalid start time: " ++ string }, Cmd.none )
+
+    AverageEndTimeChanged endTimeString ->
+      let
+          vacationMode = model.vacationMode
+      in
+          case timeOfDayFromString endTimeString of
+            Ok time ->
+              ( { model | vacationMode = { vacationMode | averageEndTime = time } }, Cmd.none )
+            Err string ->
+              ( { model | error = "Invalid end time: " ++ string }, Cmd.none )
 
     -- Boilerplate: Mdl action handler.
     Mdl msg_ ->
@@ -151,6 +253,16 @@ logIn model =
         Http.post url requestData JsonDecoders.checkLogin
   in
       Http.send LoginChecked request
+
+loadVacationMode : Cmd Msg
+loadVacationMode =
+  let
+      url = "/my_zwave/vacation_mode"
+
+      request =
+        Http.get url JsonDecoders.vacationMode
+  in
+      Http.send VacationModeReceived request
 
 
 getAvailableProgrammes : Cmd Msg
@@ -190,6 +302,25 @@ loadLights =
   in
       Http.send LightsReceived request
 
+sendNewVacationModeState : VacationMode -> Cmd Msg
+sendNewVacationModeState vacationMode =
+  let
+      stateJson = if vacationMode.state then "on" else "off"
+
+      requestData = [
+          ("start_time", Json.Encode.string <| timeOfDayToString vacationMode.averageStartTime),
+          ("end_time", Json.Encode.string <| timeOfDayToString vacationMode.averageEndTime),
+          ("state", Json.Encode.string stateJson)
+      ]
+      |> Json.Encode.object
+      |> Http.jsonBody
+
+      url = "/my_zwave/vacation_mode"
+      request =
+        Http.post url requestData JsonDecoders.vacationMode
+  in
+      Http.send VacationModeReceived request
+
 -- VIEW
 
 type alias Mdl = Material.Model
@@ -206,10 +337,13 @@ view model =
         (if model.loggedIn then
           div [] [
             Grid.grid [] [
-              Grid.cell [ Grid.size Grid.Phone 4, Grid.size Grid.Tablet 8, Grid.size Grid.Desktop 6 ] [
+              Grid.cell [ Grid.size Grid.Phone 4, Grid.size Grid.Tablet 8, Grid.size Grid.Desktop 4 ] [
                 programmesCard model
               ],
-              Grid.cell [ Grid.size Grid.Phone 4, Grid.size Grid.Tablet 8, Grid.size Grid.Desktop 6 ] [
+              Grid.cell [ Grid.size Grid.Phone 4, Grid.size Grid.Tablet 8, Grid.size Grid.Desktop 4 ] [
+                vacationModeCard model
+              ],
+              Grid.cell [ Grid.size Grid.Phone 4, Grid.size Grid.Tablet 8, Grid.size Grid.Desktop 4 ] [
                 lightsCard model
               ]
             ]
@@ -262,6 +396,65 @@ programmesCard model = Card.view [] [
     MatList.ul []
         (List.map (\programme -> programmeEntry programme model.mdl model.currentProgramme model.pendingProgramme) model.availableProgrammes)
     ]
+  ]
+
+
+vacationModeCard : Model -> Html Msg
+vacationModeCard model =
+  let
+      on = model.vacationMode.state
+
+      buttonText   = if on then "Disable"
+                     else "Enable"
+      buttonAction = if on then DisableVacationMode
+                     else EnableVacationMode
+  in
+    Card.view [] [
+      Card.title [] [
+        let titleText = if on then "Vacation mode is ON"
+            else "Vacation mode is OFF"
+        in
+        Options.styled p [ Typo.title] [ text titleText]
+      ],
+      Card.text [] [
+        MatList.ul [] [
+          MatList.li [] [
+            MatList.content [] [
+              text "Average start time:"
+            ]
+          , MatList.content2 [] [
+              if on then
+                text (timeOfDayToString model.vacationMode.averageStartTime)
+              else
+                input [ type_ "time", value (timeOfDayToString model.vacationMode.averageStartTime), onInput AverageStartTimeChanged ] []
+            ]
+          ]
+        , MatList.li [] [
+            MatList.content [] [
+              text "Average end time:"
+            ]
+          , MatList.content2 [] [
+              if on then
+                text (timeOfDayToString model.vacationMode.averageEndTime)
+              else
+                input [ type_ "time", value (timeOfDayToString model.vacationMode.averageEndTime), onInput AverageEndTimeChanged ] []
+            ]
+          ]
+        ]
+      ],
+      Card.actions
+        [ Card.border ]
+        [ Button.render Mdl [1,0] model.mdl
+            [ Button.ripple, Button.accent, Options.onClick buttonAction ]
+            [ text buttonText ]
+        ]
+    ]
+
+vacationTimeDisplay : String -> TimeOfDay -> Html Msg
+vacationTimeDisplay title time =
+  div [] [
+    text title,
+    text (timeOfDayToString time)
   ]
 
 lightsCard : Model -> Html Msg
