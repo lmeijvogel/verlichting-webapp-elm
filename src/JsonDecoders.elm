@@ -1,11 +1,9 @@
-module JsonDecoders exposing (checkLogin, availableProgrammes, currentProgramme, activationResponse, lights, vacationMode, LoginState, PostProgrammeResult, VacationModeResult)
+module JsonDecoders exposing (checkLogin, availableProgrammes, currentProgramme, activationResponse, vacationMode, LoginState, PostProgrammeResult, VacationModeResult)
 
 import Json.Decode as Decode
 import Json.Decode exposing(..)
 
 import Programme exposing (Programme)
-
-import Light exposing (..)
 
 type alias LoginState =
   {
@@ -53,27 +51,6 @@ activationResponse = map3 PostProgrammeResult
                       (field "success" bool)
                       (field "programme" string)
                       (field "recipients" int)
-
-lights : Decoder (List Light)
-lights =
-  let
-    toLight : Decoder Light
-    toLight = Json.Decode.oneOf
-      [
-        map4 DimmableLight
-          (field "node_id" int)
-          (field "name" string)
-          (field "display_name" string)
-          (field "value" int)
-       ,
-        map4 SwitchableLight
-          (field "node_id" int)
-          (field "name" string)
-          (field "display_name" string)
-          (field "state" bool)
-      ]
-  in
-    field "lights" (list toLight)
 
 vacationMode : Decoder (VacationModeResult)
 vacationMode =

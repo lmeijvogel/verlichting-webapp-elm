@@ -80,9 +80,8 @@ type Msg
   | ProgrammeClicked Programme
   | ActivationResponseReceived (Result Http.Error JsonDecoders.PostProgrammeResult)
 
-  | LightsReceived (Result Http.Error (List Light))
-
   | VacationModeMsg VacationMode.Msg
+  | LightMsg Light.Msg
 
   | Mdl (Material.Msg Msg)
 
@@ -101,18 +100,23 @@ update msg model =
       ( { model | pendingProgramme = programme.id }, activateProgramme programme )
     ActivationResponseReceived (Ok result) ->
       if result.success then
-        ( { model | currentProgramme = result.programme, pendingProgramme = "" }, loadLights )
+        ( { model | currentProgramme = result.programme, pendingProgramme = "" }, Cmd.map LightMsg Light.load )
       else
         ( { model | error = "Result was not success" }, Cmd.none)
     ActivationResponseReceived (Err _) ->
       ( { model | error = "An error occurred" }, Cmd.none)
-    LightsReceived (Ok lights) ->
-      ( { model | lights = lights }, Cmd.none)
-    LightsReceived (Err error) ->
-      ( { model | error = (toString error)}, Cmd.none)
+    LightMsg msg ->
+      let
+          (newLights, cmd) = Light.update msg model.lights
+      in
+        ( { model | lights = newLights }, Cmd.map LightMsg cmd )
     LoginChecked (Ok loginState) ->
       let
-          nextCommand = if loginState.loggedIn then Cmd.batch [getAvailableProgrammes, loadLights, Cmd.map VacationModeMsg VacationMode.load]
+          nextCommand = if loginState.loggedIn then Cmd.batch [
+              getAvailableProgrammes,
+              Cmd.map LightMsg Light.load,
+              Cmd.map VacationModeMsg VacationMode.load
+            ]
                         else Cmd.none
       in
         ( { model | loggedIn = loginState.loggedIn }, nextCommand )
@@ -191,15 +195,6 @@ activateProgramme programme =
         Http.post url Http.emptyBody JsonDecoders.activationResponse
   in
       Http.send ActivationResponseReceived request
-
-loadLights : Cmd Msg
-loadLights =
-  let
-      url = "/my_zwave/current_lights"
-      request =
-        Http.get url JsonDecoders.lights
-  in
-      Http.send LightsReceived request
 
 -- VIEW
 
