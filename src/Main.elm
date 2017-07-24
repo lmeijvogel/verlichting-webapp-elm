@@ -13,7 +13,9 @@ import Material.Grid as Grid
 import Material.Layout as Layout
 import Material.List as MatList
 import Material.Options as Options exposing (css)
+import Material.Slider as Slider
 import Material.Textfield as Textfield
+import Material.Toggles as Toggles
 import Material.Typography as Typo
 
 import Regex exposing (..)
@@ -47,6 +49,7 @@ type alias Model =
   , currentProgramme : String
   , pendingProgramme : String
   , lights : List Light
+  , editingLightId : Maybe Int
   , vacationMode: VacationMode
   , error : String
   , loginFormData : LoginFormData
@@ -62,6 +65,7 @@ init =
     currentProgramme = "",
     pendingProgramme = "",
     lights = [],
+    editingLightId = Nothing,
     vacationMode = VacationMode.new,
     error = "",
     loginFormData = newLoginFormData,
@@ -84,6 +88,8 @@ type Msg
   | ActivationResponseReceived (Result Http.Error JsonDecoders.PostProgrammeResult)
 
   | VacationModeMsg VacationMode.Msg
+  | ShowLight (Maybe Light)
+
   | LightMsg Light.Msg
 
   | Mdl (Material.Msg Msg)
@@ -109,10 +115,12 @@ update msg model =
     ActivationResponseReceived (Err _) ->
       ( { model | error = "An error occurred" }, Cmd.none)
     LightMsg msg ->
-      let
-          (newLights, cmd) = Light.update msg model.lights
-      in
-        ( { model | lights = newLights }, Cmd.map LightMsg cmd )
+      case Light.update msg model.lights of
+        (Ok lights, cmd) ->
+          ( { model | lights = lights }, Cmd.map LightMsg cmd)
+        (Err error, cmd) ->
+          ( { model | error = toString error }, Cmd.map LightMsg cmd)
+
     UsernameChanged username ->
       let loginFormData = model.loginFormData
       in
@@ -138,6 +146,9 @@ update msg model =
           (newVacationMode, cmd) = VacationMode.update msg model.vacationMode
       in
           ( { model | vacationMode = newVacationMode }, Cmd.map VacationModeMsg cmd)
+
+    ShowLight light ->
+      ( { model | editingLightId = (Maybe.map (\l -> l.id) light) }, Cmd.none )
 
     -- Boilerplate: Mdl action handler.
     Mdl msg_ ->
@@ -317,15 +328,67 @@ vacationModeCard model =
     ]
 
 lightsCard : Model -> Html Msg
-lightsCard model = Card.view [] [
+lightsCard model =
+    case model.editingLightId of
+      Just editingLightId ->
+        let
+            light : Maybe Light
+            light = List.filter (\l -> l.id == editingLightId) model.lights |> List.head
+
+        in
+            case light of
+              Just light -> singleLightCard light model
+              Nothing -> text "Unknown light selected!"
+      Nothing ->
+        Card.view [] [
+          Card.title [] [
+            Options.styled p [ Typo.title] [ text "Lichten"]
+          ],
+          Card.text [] [
+            MatList.ul []
+              (List.map (\light -> lightEntry light) model.lights)
+          ]
+        ]
+
+singleLightCard : Light -> Model -> Html Msg
+singleLightCard light model =
+  Card.view [] [
     Card.title [] [
-      Options.styled p [ Typo.title] [ text "Lichten"]
+      Options.styled p [ Typo.title] [ text light.displayName ]
     ],
     Card.text [] [
-      MatList.ul []
-        (List.map (\light -> lightEntry light) model.lights)
-    ]
+      case light.value of
+        State currentState ->
+          Toggles.switch Mdl [0] model.mdl
+          [ Options.onToggle (LightMsg (Update light (State (not currentState)) True))
+          , Toggles.ripple
+          , Toggles.value currentState
+          ]
+          [ text "Switch" ]
+        Level currentLevel ->
+            div [] [
+              Slider.view
+              [ Slider.onChange (newIntensityRequested light)
+              , Options.onMouseUp (LightMsg (Save light))
+              , Slider.value (toFloat currentLevel)
+              , Slider.max 99
+              , Slider.min 0
+              ],
+              text (toString currentLevel)
+            ]
+
+    ],
+    Card.actions
+      [ Card.border ]
+      [ Button.render Mdl [1,0] model.mdl
+          [ Button.ripple, Button.accent, Options.onClick (ShowLight Nothing) ]
+          [ text "Close" ]
+      ]
   ]
+
+newIntensityRequested : Light -> Float -> Msg
+newIntensityRequested light level =
+  LightMsg (Update light (Level (round level)) False)
 
 compactListItem : List (Options.Property c m) -> List (Html m) -> Html m
 compactListItem listStyles = MatList.li [
@@ -360,17 +423,13 @@ programmeEntry programme mdl currentProgramme pendingProgramme =
 lightEntry : Light -> Html Msg
 lightEntry light =
   let
-      valueDisplay = case light of
-          SwitchableLight _ _ _ state ->
+      valueDisplay = case light.value of
+        State state ->
             if state then "On"
             else "-"
-          DimmableLight _ _ _ intensity ->
-            if intensity == 0 then "-"
-            else (toString intensity)
-
-      name = case light of
-        SwitchableLight _ lightName _ _ -> lightName
-        DimmableLight   _ lightName _ _ -> lightName
+        Level level ->
+            if level == 0 then "-"
+            else (toString level)
 
       chipBackgroundColor = case valueDisplay of
         "-" -> Color.color Color.Blue  Color.S100
@@ -391,6 +450,7 @@ lightEntry light =
           Chip.span [
             Options.css "width" "100%"
           , Color.background (chipBackgroundColor)
+          , Options.onClick (ShowLight (Just light))
 
           ]
           [
@@ -400,8 +460,9 @@ lightEntry light =
             , Color.text valueForegroundColor
             ]
             [ text valueDisplay ]
-            , Chip.content [ ]
-            [text name ]
+            , Chip.content [ ] [
+              text light.displayName
+            ]
           ]
         ]
       ]
