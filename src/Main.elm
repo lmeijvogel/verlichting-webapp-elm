@@ -218,7 +218,7 @@ view model =
                 lightsCard model
               ]
             ]
-            --, div [] [ text model.error ]
+            , div [] [ text model.error ]
           ]
         else
           loginCard model
