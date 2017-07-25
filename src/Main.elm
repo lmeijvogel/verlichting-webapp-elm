@@ -46,8 +46,8 @@ type alias Model =
   {
     loginState : Login.LoginState
   , availableProgrammes: List Programme
-  , currentProgramme : String
-  , pendingProgramme : String
+  , currentProgramme : Maybe String
+  , pendingProgramme : Maybe String
   , lights : List Light
   , editingLightId : Maybe Int
   , vacationMode: VacationMode
@@ -62,8 +62,8 @@ init =
   ({
     loginState = Login.newLoginState,
     availableProgrammes = [],
-    currentProgramme = "",
-    pendingProgramme = "",
+    currentProgramme = Nothing,
+    pendingProgramme = Nothing,
     lights = [],
     editingLightId = Nothing,
     vacationMode = VacationMode.new,
@@ -102,14 +102,14 @@ update msg model =
     ProgrammesReceived (Err error) ->
       ( { model | error = "Could not retrieve programmes list: " ++ (toString error) }, Cmd.none )
     CurrentProgrammeReceived (Ok id) ->
-      ( { model | currentProgramme = id }, Cmd.none )
+      ( { model | currentProgramme = Just id }, Cmd.none )
     CurrentProgrammeReceived (Err _) ->
       ( { model | error = "Could not retrieve current programme" }, Cmd.none )
     ProgrammeClicked programme ->
-      ( { model | pendingProgramme = programme.id }, activateProgramme programme )
+      ( { model | pendingProgramme = Just programme.id }, activateProgramme programme )
     ActivationResponseReceived (Ok result) ->
       if result.success then
-        ( { model | currentProgramme = result.programme, pendingProgramme = "" }, Cmd.map LightMsg Light.load )
+        ( { model | currentProgramme = Just result.programme, pendingProgramme = Nothing }, Cmd.map LightMsg Light.load )
       else
         ( { model | error = "Result was not success" }, Cmd.none)
     ActivationResponseReceived (Err _) ->
@@ -396,16 +396,20 @@ compactListItem listStyles = MatList.li [
       Options.css "padding-bottom" "0"
     ]
 
-programmeEntry : Programme -> Material.Model -> String -> String -> Html Msg
+programmeEntry : Programme -> Material.Model -> Maybe String -> Maybe String -> Html Msg
 programmeEntry programme mdl currentProgramme pendingProgramme =
   let
-      buttonStyles = [ Options.css "width" "100%" ] ++
-        if programme.id == currentProgramme then
+      commonButtonStyles = [ Options.css "width" "100%" ]
+
+      extraButtonStyles =
+        if currentProgramme == Just programme.id then
           [ Button.ripple, Button.colored, Button.raised ]
-        else if programme.id == pendingProgramme then
+        else if pendingProgramme == Just programme.id then
           [ Button.ripple, Button.raised ]
         else
           []
+
+      buttonStyles = commonButtonStyles ++ extraButtonStyles
   in
         compactListItem [] [
           MatList.content [
