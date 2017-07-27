@@ -18,16 +18,14 @@ import Material.Textfield as Textfield
 import Material.Toggles as Toggles
 import Material.Typography as Typo
 
-import Regex exposing (..)
-
 import Programme exposing (Programme)
 import Light exposing (..)
 import Login
 import VacationMode exposing (VacationMode, timeOfDayToString)
 
 import JsonDecoders
-import Json.Encode
 
+main : Program Never Model Msg
 main = Html.program { init = init,
                       view = view,
                       update = update,
