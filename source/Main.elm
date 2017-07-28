@@ -12,6 +12,7 @@ import Material.Color as Color
 import Material.Grid as Grid
 import Material.Layout as Layout
 import Material.List as MatList
+import Material.Spinner as Spinner
 import Material.Options as Options exposing (css)
 import Material.Slider as Slider
 import Material.Textfield as Textfield
@@ -60,7 +61,7 @@ type alias Model =
 
 init : ( Model, Cmd Msg )
 init =
-    ( { loginState = Login.newLoginState
+    ( { loginState = Login.new
       , availableProgrammes = []
       , currentProgramme = Nothing
       , pendingProgramme = Nothing
@@ -246,24 +247,40 @@ view model =
         , drawer = []
         , tabs = ( [], [] )
         , main =
-            [ (if model.loginState.loggedIn then
-                div []
-                    [ Grid.grid []
-                        [ Grid.cell [ Grid.size Grid.Phone 4, Grid.size Grid.Tablet 8, Grid.size Grid.Desktop 4 ]
-                            [ programmesCard model
-                            ]
-                        , Grid.cell [ Grid.size Grid.Phone 4, Grid.size Grid.Tablet 8, Grid.size Grid.Desktop 4 ]
-                            [ vacationModeCard model
-                            ]
-                        , Grid.cell [ Grid.size Grid.Phone 4, Grid.size Grid.Tablet 8, Grid.size Grid.Desktop 4 ]
-                            [ lightsCard model
+            [ case model.loginState of
+                Login.Unknown ->
+                    div []
+                        [ Grid.grid [ Options.center ]
+                            [ Grid.cell
+                                [ Options.center
+                                , Grid.size Grid.Phone 4
+                                , Grid.size Grid.Tablet 8
+                                , Grid.size Grid.Desktop 12
+                                ]
+                                [ Spinner.spinner
+                                    [ Spinner.active True ]
+                                ]
                             ]
                         ]
-                    , div [] [ text model.error ]
-                    ]
-               else
-                loginCard model
-              )
+
+                Login.LoggedIn ->
+                    div []
+                        [ Grid.grid []
+                            [ Grid.cell [ Grid.size Grid.Phone 4, Grid.size Grid.Tablet 8, Grid.size Grid.Desktop 4 ]
+                                [ programmesCard model
+                                ]
+                            , Grid.cell [ Grid.size Grid.Phone 4, Grid.size Grid.Tablet 8, Grid.size Grid.Desktop 4 ]
+                                [ vacationModeCard model
+                                ]
+                            , Grid.cell [ Grid.size Grid.Phone 4, Grid.size Grid.Tablet 8, Grid.size Grid.Desktop 4 ]
+                                [ lightsCard model
+                                ]
+                            ]
+                        , div [] [ text model.error ]
+                        ]
+
+                Login.NotLoggedIn ->
+                    loginCard model
             ]
         }
 

@@ -1,4 +1,4 @@
-module Login exposing (LoginState, Msg, newLoginState, checkLoggedIn, update, logIn)
+module Login exposing (LoginState(..), Msg, new, checkLoggedIn, update, logIn)
 
 import Http
 import Json.Decode exposing (..)
@@ -9,14 +9,15 @@ type Msg
     = LoginChecked (Result Http.Error LoginState)
 
 
-type alias LoginState =
-    { loggedIn : Bool
-    }
+type LoginState
+    = Unknown
+    | NotLoggedIn
+    | LoggedIn
 
 
-newLoginState : LoginState
-newLoginState =
-    LoginState False
+new : LoginState
+new =
+    Unknown
 
 
 update : Msg -> LoginState -> ( LoginState, Bool )
@@ -25,16 +26,16 @@ update msg loginState =
         LoginChecked (Ok newLoginState) ->
             let
                 stateChanged =
-                    loginState.loggedIn /= newLoginState.loggedIn
+                    loginState /= newLoginState
             in
-                ( { loginState | loggedIn = newLoginState.loggedIn }, stateChanged )
+                ( newLoginState, stateChanged )
 
         LoginChecked (Err error) ->
             let
                 stateChanged =
-                    loginState.loggedIn == True
+                    loginState == LoggedIn
             in
-                ( { loginState | loggedIn = False }, stateChanged )
+                ( NotLoggedIn, stateChanged )
 
 
 checkLoggedIn : Cmd Msg
@@ -72,7 +73,14 @@ decodeLogin : Decoder LoginState
 decodeLogin =
     let
         convert result =
-            Json.Decode.succeed (LoginState result)
+            let
+                resultingState =
+                    if result then
+                        LoggedIn
+                    else
+                        NotLoggedIn
+            in
+                Json.Decode.succeed resultingState
     in
         (field "loggedIn" bool)
             |> Json.Decode.andThen convert
