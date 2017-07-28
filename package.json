@@ -4,7 +4,8 @@
   "description": "Elm implementation of my lights manager",
   "main": "index.js",
   "dependencies": {
-    "elm": "^0.18.0"
+    "elm": "^0.18.0",
+    "webpack": "^3.4.1"
   },
   "devDependencies": {
     "chokidar-cli": "^1.2.0"

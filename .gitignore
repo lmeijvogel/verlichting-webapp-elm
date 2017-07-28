@@ -1,2 +1,7 @@
 elm-stuff
 node_modules
+.env
+deploy.yml
+out/
+tmp/
+dist/
