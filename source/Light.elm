@@ -1,6 +1,5 @@
 module Light exposing (Light, LightValue(..), Msg(Update, Save), load, update, save)
 
-import Debug exposing (log)
 import Http
 import Json.Decode exposing (..)
 
