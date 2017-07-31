@@ -149,13 +149,18 @@ update msg model =
                 ( newLoginState, loginStateChanged ) =
                     Login.update msg model.loginState
 
+                nextLoginFormData = if loginStateChanged then
+                  newLoginFormData -- Clear login form data after logging in
+                else
+                  model.loginFormData
+
                 nextCommand =
                     if loginStateChanged then
                         initialize
                     else
                         Cmd.none
             in
-                ( { model | loginState = newLoginState }, nextCommand )
+                ( { model | loginState = newLoginState, loginFormData = nextLoginFormData }, nextCommand )
 
         SubmitLogin ->
             let
