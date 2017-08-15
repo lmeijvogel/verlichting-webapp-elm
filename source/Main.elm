@@ -10,6 +10,7 @@ import Material.Card as Card
 import Material.Chip as Chip
 import Material.Color as Color
 import Material.Grid as Grid
+import Material.Icon as Icon
 import Material.Layout as Layout
 import Material.List as MatList
 import Material.Spinner as Spinner
@@ -291,63 +292,101 @@ activateProgramme programme =
 type alias Mdl =
     Material.Model
 
+
 view : Model -> Html Msg
 view model =
-  let
-      mainColor = case model.liveState of
-        Live       -> Color.Indigo
-        Simulation -> Color.Teal
-        _          -> Color.BlueGrey
-  in
-    (Layout.render Mdl
-        model.mdl
-        [ Layout.fixedHeader
-        ]
-        { header = [ Layout.row [ Typo.title ] [ text "Verlichting" ] ]
-        , drawer = []
-        , tabs = ( [], [] )
-        , main =
-            [ case model.loginState of
-                Login.Unknown ->
-                    div []
-                        [ Grid.grid [ Options.center ]
-                            [ Grid.cell
-                                [ Options.center
-                                , Grid.size Grid.Phone 4
-                                , Grid.size Grid.Tablet 8
-                                , Grid.size Grid.Desktop 12
-                                ]
-                                [ Spinner.spinner
-                                    [ Spinner.active True ]
-                                ]
-                            ]
-                        ]
+    let
+        mainColor =
+            case model.liveState of
+                Live ->
+                    Color.Indigo
 
-                Login.LoggedIn ->
-                    div []
-                        [ Grid.grid []
-                            [ Grid.cell [ Grid.size Grid.Phone 4, Grid.size Grid.Tablet 8, Grid.size Grid.Desktop 4 ]
-                                [ programmesCard model
-                                ]
-                            , Grid.cell [ Grid.size Grid.Phone 4, Grid.size Grid.Tablet 8, Grid.size Grid.Desktop 4 ]
-                                [ vacationModeCard model
-                                ]
-                            , Grid.cell [ Grid.size Grid.Phone 4, Grid.size Grid.Tablet 8, Grid.size Grid.Desktop 4 ]
-                                [ lightsCard model
-                                ]
-                            , Grid.cell [ Grid.size Grid.Phone 4, Grid.size Grid.Tablet 8, Grid.size Grid.Desktop 4 ]
-                                [ liveButtonCard model
-                                ]
-                            ]
-                        , div [] [ text model.error ]
-                        ]
+                Simulation ->
+                    Color.Teal
 
-                Login.NotLoggedIn ->
-                    loginCard model
+                _ ->
+                    Color.BlueGrey
+    in
+        (Layout.render Mdl
+            model.mdl
+            [ Layout.fixedHeader
             ]
-        }
-    )
-    |> Scheme.topWithScheme mainColor Color.Red
+            { header = [ Layout.row [ Typo.title ] [ text "Verlichting" ] ]
+            , drawer = [ drawer model ]
+            , tabs = ( [], [] )
+            , main =
+                [ case model.loginState of
+                    Login.Unknown ->
+                        div []
+                            [ Grid.grid [ Options.center ]
+                                [ Grid.cell
+                                    [ Options.center
+                                    , Grid.size Grid.Phone 4
+                                    , Grid.size Grid.Tablet 8
+                                    , Grid.size Grid.Desktop 12
+                                    ]
+                                    [ Spinner.spinner
+                                        [ Spinner.active True ]
+                                    ]
+                                ]
+                            ]
+
+                    Login.LoggedIn ->
+                        div []
+                            [ Grid.grid []
+                                [ Grid.cell [ Grid.size Grid.Phone 4, Grid.size Grid.Tablet 8, Grid.size Grid.Desktop 4 ]
+                                    [ programmesCard model
+                                    ]
+                                , Grid.cell [ Grid.size Grid.Phone 4, Grid.size Grid.Tablet 8, Grid.size Grid.Desktop 4 ]
+                                    [ vacationModeCard model
+                                    ]
+                                , Grid.cell [ Grid.size Grid.Phone 4, Grid.size Grid.Tablet 8, Grid.size Grid.Desktop 4 ]
+                                    [ lightsCard model
+                                    ]
+                                ]
+                            , div [] [ text model.error ]
+                            ]
+
+                    Login.NotLoggedIn ->
+                        loginCard model
+                ]
+            }
+        )
+            |> Scheme.topWithScheme mainColor Color.Red
+
+
+drawer : Model -> Html Msg
+drawer model =
+    let
+        check x =
+            if x then
+                Icon.view "check" [ css "width" "40px" ]
+            else
+                Options.span [ css "width" "40px" ] []
+
+        newLiveState =
+            if model.liveState == Live then
+                Simulation
+            else
+                Live
+    in
+        div []
+            [ MatList.ul []
+                [ MatList.li []
+                    [ MatList.content
+                        [ Options.onClick (LiveStateClicked newLiveState)
+                        ]
+                        [ Toggles.checkbox Mdl
+                            [ 0 ]
+                            model.mdl
+                            [ Toggles.value (model.liveState == Live)
+                            , Options.onToggle (LiveStateClicked newLiveState)
+                            ]
+                            [text "Web Live"]
+                        ]
+                    ]
+                ]
+            ]
 
 
 loginCard : Model -> Html Msg
@@ -559,63 +598,6 @@ compactListItem listStyles =
         [ Options.css "padding-top" "0"
         , Options.css "padding-bottom" "0"
         ]
-
-
-liveButtonCard : Model -> Html Msg
-liveButtonCard model =
-    let
-        buttonText =
-            case model.liveState of
-                Unknown ->
-                    "..."
-
-                Live ->
-                    "Disable"
-
-                Simulation ->
-                    "Enable"
-
-                LiveStateError ->
-                    "Could not determine liveState"
-
-        title =
-            case model.liveState of
-                Unknown ->
-                    "App is not yet loaded"
-
-                Live ->
-                    "App is live"
-
-                Simulation ->
-                    "App is disabled"
-
-                LiveStateError ->
-                    "Error loading LiveState"
-
-        newState =
-            case model.liveState of
-                Live ->
-                    Simulation
-
-                _ ->
-                    Live
-    in
-        Card.view []
-            [ Card.title []
-                [ Options.styled p [ Typo.title ] [ text title ]
-                ]
-            , Card.actions
-                [ Card.border ]
-                [ Button.render Mdl
-                    [ 0 ]
-                    model.mdl
-                    [ Options.onClick (LiveStateClicked newState)
-                    , Options.css "width" "100%"
-                    ]
-                    [ text buttonText ]
-                ]
-            ]
-
 
 programmeEntry : Programme -> Material.Model -> Maybe String -> Maybe String -> Html Msg
 programmeEntry programme mdl currentProgramme pendingProgramme =
