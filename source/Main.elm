@@ -14,6 +14,7 @@ import Material.Layout as Layout
 import Material.List as MatList
 import Material.Spinner as Spinner
 import Material.Options as Options exposing (css)
+import Material.Scheme as Scheme
 import Material.Slider as Slider
 import Material.Textfield as Textfield
 import Material.Toggles as Toggles
@@ -290,10 +291,15 @@ activateProgramme programme =
 type alias Mdl =
     Material.Model
 
-
 view : Model -> Html Msg
 view model =
-    Layout.render Mdl
+  let
+      mainColor = case model.liveState of
+        Live       -> Color.Indigo
+        Simulation -> Color.Teal
+        _          -> Color.BlueGrey
+  in
+    (Layout.render Mdl
         model.mdl
         [ Layout.fixedHeader
         ]
@@ -340,6 +346,8 @@ view model =
                     loginCard model
             ]
         }
+    )
+    |> Scheme.topWithScheme mainColor Color.Red
 
 
 loginCard : Model -> Html Msg
