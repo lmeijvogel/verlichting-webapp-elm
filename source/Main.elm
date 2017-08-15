@@ -21,6 +21,7 @@ import Material.Typography as Typo
 import Programme exposing (Programme)
 import Light exposing (..)
 import Login
+import LiveState exposing (LiveState(..))
 import VacationMode exposing (VacationMode, timeOfDayToString)
 import JsonDecoders
 
@@ -47,6 +48,7 @@ type alias LoginFormData =
 
 type alias Model =
     { loginState : Login.LoginState
+    , liveState : LiveState
     , availableProgrammes : List Programme
     , currentProgramme : Maybe String
     , pendingProgramme : Maybe String
@@ -62,6 +64,7 @@ type alias Model =
 init : ( Model, Cmd Msg )
 init =
     ( { loginState = Login.new
+      , liveState = Unknown
       , availableProgrammes = []
       , currentProgramme = Nothing
       , pendingProgramme = Nothing
@@ -92,6 +95,8 @@ type Msg
     | VacationModeMsg VacationMode.Msg
     | ShowLight (Maybe Light)
     | LightMsg Light.Msg
+    | LiveStateClicked LiveState
+    | LiveStateReceived (Result Http.Error LiveState)
     | Mdl (Material.Msg Msg)
 
 
@@ -130,6 +135,15 @@ update msg model =
                 ( Err error, cmd ) ->
                     ( { model | error = toString error }, Cmd.map LightMsg cmd )
 
+        LiveStateClicked liveState ->
+            ( model, setLiveState liveState )
+
+        LiveStateReceived (Ok liveState) ->
+            ( { model | liveState = liveState }, Cmd.none )
+
+        LiveStateReceived (Err _) ->
+            ( { model | liveState = LiveStateError }, Cmd.none )
+
         UsernameChanged username ->
             let
                 loginFormData =
@@ -149,10 +163,12 @@ update msg model =
                 ( newLoginState, loginStateChanged ) =
                     Login.update msg model.loginState
 
-                nextLoginFormData = if loginStateChanged then
-                  newLoginFormData -- Clear login form data after logging in
-                else
-                  model.loginFormData
+                nextLoginFormData =
+                    if loginStateChanged then
+                        newLoginFormData
+                        -- Clear login form data after logging in
+                    else
+                        model.loginFormData
 
                 nextCommand =
                     if loginStateChanged then
@@ -188,6 +204,7 @@ initialize : Cmd Msg
 initialize =
     Cmd.batch
         [ getAvailableProgrammes
+        , getLiveState
         , Cmd.map LightMsg Light.load
         , Cmd.map VacationModeMsg VacationMode.load
         ]
@@ -208,6 +225,38 @@ getAvailableProgrammes =
             Http.get url JsonDecoders.availableProgrammes
     in
         Http.send ProgrammesReceived request
+
+
+getLiveState : Cmd Msg
+getLiveState =
+    let
+        url =
+            "/my_zwave/live"
+
+        request =
+            Http.get url JsonDecoders.liveState
+    in
+        Http.send LiveStateReceived request
+
+
+setLiveState : LiveState -> Cmd Msg
+setLiveState newState =
+    let
+        stateString =
+            case newState of
+                Simulation ->
+                    "false"
+
+                _ ->
+                    "true"
+
+        url =
+            "/my_zwave/live/" ++ stateString
+
+        request =
+            Http.post url Http.emptyBody JsonDecoders.liveState
+    in
+        Http.send LiveStateReceived request
 
 
 getCurrentProgramme : Cmd Msg
@@ -279,6 +328,9 @@ view model =
                                 ]
                             , Grid.cell [ Grid.size Grid.Phone 4, Grid.size Grid.Tablet 8, Grid.size Grid.Desktop 4 ]
                                 [ lightsCard model
+                                ]
+                            , Grid.cell [ Grid.size Grid.Phone 4, Grid.size Grid.Tablet 8, Grid.size Grid.Desktop 4 ]
+                                [ liveButtonCard model
                                 ]
                             ]
                         , div [] [ text model.error ]
@@ -499,6 +551,62 @@ compactListItem listStyles =
         [ Options.css "padding-top" "0"
         , Options.css "padding-bottom" "0"
         ]
+
+
+liveButtonCard : Model -> Html Msg
+liveButtonCard model =
+    let
+        buttonText =
+            case model.liveState of
+                Unknown ->
+                    "..."
+
+                Live ->
+                    "Disable"
+
+                Simulation ->
+                    "Enable"
+
+                LiveStateError ->
+                    "Could not determine liveState"
+
+        title =
+            case model.liveState of
+                Unknown ->
+                    "App is not yet loaded"
+
+                Live ->
+                    "App is live"
+
+                Simulation ->
+                    "App is disabled"
+
+                LiveStateError ->
+                    "Error loading LiveState"
+
+        newState =
+            case model.liveState of
+                Live ->
+                    Simulation
+
+                _ ->
+                    Live
+    in
+        Card.view []
+            [ Card.title []
+                [ Options.styled p [ Typo.title ] [ text title ]
+                ]
+            , Card.actions
+                [ Card.border ]
+                [ Button.render Mdl
+                    [ 0 ]
+                    model.mdl
+                    [ Options.onClick (LiveStateClicked newState)
+                    , Options.css "width" "100%"
+                    ]
+                    [ text buttonText ]
+                ]
+            ]
 
 
 programmeEntry : Programme -> Material.Model -> Maybe String -> Maybe String -> Html Msg

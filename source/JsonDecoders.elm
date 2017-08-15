@@ -1,8 +1,9 @@
-module JsonDecoders exposing (availableProgrammes, currentProgramme, activationResponse, vacationMode, PostProgrammeResult, VacationModeResult)
+module JsonDecoders exposing (availableProgrammes, currentProgramme, activationResponse, vacationMode, liveState, PostProgrammeResult, VacationModeResult)
 
 import Json.Decode as Decode
 import Json.Decode exposing (..)
 import Programme exposing (Programme)
+import LiveState exposing (LiveState(..))
 
 
 type alias PostProgrammeResult =
@@ -49,3 +50,21 @@ activationResponse =
 vacationMode : Decoder VacationModeResult
 vacationMode =
     map VacationModeResult (field "state" string)
+
+
+liveState : Decoder LiveState
+liveState =
+    let
+        convert : Bool -> Decoder LiveState
+        convert state =
+            let
+                newState =
+                    if state then
+                        Live
+                    else
+                        Simulation
+            in
+                Decode.succeed newState
+    in
+        field "state" bool
+            |> Decode.andThen convert
