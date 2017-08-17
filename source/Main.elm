@@ -10,6 +10,7 @@ import Material.Card as Card
 import Material.Chip as Chip
 import Material.Color as Color
 import Material.Grid as Grid
+import Material.Icon as Icon
 import Material.Layout as Layout
 import Material.List as MatList
 import Material.Spinner as Spinner
@@ -352,12 +353,33 @@ view model =
 
                 _ ->
                     Color.BlueGrey
+
+        scheduleIcon =
+            if model.vacationMode.state then
+                [ Icon.i "schedule" ]
+            else
+                []
+
+        syncDisabledIcon =
+            if model.liveState == LiveState.Live then
+                []
+            else
+                [ Icon.i "sync_disabled" ]
+
+        indeterminateCheckboxIcon =
+            if model.mainSwitchState == MainSwitchState.Enabled then
+                []
+            else
+                [ Icon.i "indeterminate_check_box" ]
+
+        icons =
+            scheduleIcon ++ syncDisabledIcon ++ indeterminateCheckboxIcon
     in
         (Layout.render Mdl
             model.mdl
             [ Layout.fixedHeader
             ]
-            { header = [ Layout.row [ Typo.title ] [ text "Verlichting" ] ]
+            { header = [ Layout.row [ Typo.title ] ([ text "Verlichting" ] ++ icons) ]
             , drawer = [ drawer model ]
             , tabs = ( [], [] )
             , main =
