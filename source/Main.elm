@@ -1,7 +1,7 @@
 module Main exposing (..)
 
 import Http
-import Html exposing (Html, ul, li, div, p, text, button, label, input)
+import Html exposing (Html, ul, li, div, span, p, text, button, label, input)
 import Html.Attributes exposing (placeholder, href, rel, type_, value)
 import Html.Events exposing (onInput, onClick)
 import Material
@@ -379,7 +379,14 @@ view model =
             model.mdl
             [ Layout.fixedHeader
             ]
-            { header = [ Layout.row [ Typo.title ] ([ text "Verlichting" ] ++ icons) ]
+            { header =
+                [ Layout.row [ Typo.title ]
+                    [ span
+                        [ Html.Attributes.style [ ( "margin-right", "20px" ) ] ]
+                        [ text "Verlichting" ]
+                    , span [] icons
+                    ]
+                ]
             , drawer = [ drawer model ]
             , tabs = ( [], [] )
             , main =
