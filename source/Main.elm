@@ -24,6 +24,7 @@ import Programme exposing (Programme)
 import Light exposing (..)
 import Login
 import LiveState exposing (LiveState)
+import MainSwitchState exposing (MainSwitchState)
 import VacationMode exposing (VacationMode, timeOfDayToString)
 import JsonDecoders
 
@@ -57,6 +58,7 @@ type alias Model =
     , lights : List Light
     , editingLightId : Maybe Int
     , vacationMode : VacationMode
+    , mainSwitchState : MainSwitchState
     , error : String
     , loginFormData : LoginFormData
     , mdl : Material.Model
@@ -73,6 +75,7 @@ init =
       , lights = []
       , editingLightId = Nothing
       , vacationMode = VacationMode.new
+      , mainSwitchState = MainSwitchState.Unknown
       , error = ""
       , loginFormData = newLoginFormData
       , mdl = Material.model
@@ -99,6 +102,8 @@ type Msg
     | LightMsg Light.Msg
     | LiveStateClicked LiveState
     | LiveStateReceived (Result Http.Error LiveState)
+    | MainSwitchStateClicked MainSwitchState
+    | MainSwitchStateReceived (Result Http.Error MainSwitchState)
     | Mdl (Material.Msg Msg)
 
 
@@ -145,6 +150,15 @@ update msg model =
 
         LiveStateReceived (Err _) ->
             ( { model | liveState = LiveState.Error }, Cmd.none )
+
+        MainSwitchStateClicked mainSwitchState ->
+            ( model, setMainSwitchState mainSwitchState )
+
+        MainSwitchStateReceived (Ok mainSwitchState) ->
+            ( { model | mainSwitchState = mainSwitchState }, Cmd.none )
+
+        MainSwitchStateReceived (Err _) ->
+            ( { model | mainSwitchState = MainSwitchState.Error }, Cmd.none )
 
         UsernameChanged username ->
             let
@@ -207,6 +221,7 @@ initialize =
     Cmd.batch
         [ getAvailableProgrammes
         , getLiveState
+        , getMainSwitchState
         , Cmd.map LightMsg Light.load
         , Cmd.map VacationModeMsg VacationMode.load
         ]
@@ -259,6 +274,38 @@ setLiveState newState =
             Http.post url Http.emptyBody JsonDecoders.liveState
     in
         Http.send LiveStateReceived request
+
+
+getMainSwitchState : Cmd Msg
+getMainSwitchState =
+    let
+        url =
+            "/my_zwave/main_switch"
+
+        request =
+            Http.get url JsonDecoders.mainSwitchState
+    in
+        Http.send MainSwitchStateReceived request
+
+
+setMainSwitchState : MainSwitchState -> Cmd Msg
+setMainSwitchState newState =
+    let
+        stateString =
+            case newState of
+                MainSwitchState.Disabled ->
+                    "false"
+
+                _ ->
+                    "true"
+
+        url =
+            "/my_zwave/main_switch/" ++ stateString
+
+        request =
+            Http.post url Http.emptyBody JsonDecoders.mainSwitchState
+    in
+        Http.send MainSwitchStateReceived request
 
 
 getCurrentProgramme : Cmd Msg
@@ -369,6 +416,12 @@ drawer model =
                 LiveState.Simulation
             else
                 LiveState.Live
+
+        newMainSwitchState =
+            if model.mainSwitchState == MainSwitchState.Enabled then
+                MainSwitchState.Disabled
+            else
+                MainSwitchState.Enabled
     in
         div []
             [ MatList.ul []
@@ -383,6 +436,18 @@ drawer model =
                             , Options.onToggle (LiveStateClicked newLiveState)
                             ]
                             [text "Web Live"]
+                        ]
+                    ]
+                , MatList.li []
+                    [ MatList.content
+                        []
+                        [ Toggles.checkbox Mdl
+                            [ 1 ]
+                            model.mdl
+                            [ Toggles.value (model.mainSwitchState == MainSwitchState.Enabled)
+                            , Options.onToggle (MainSwitchStateClicked newMainSwitchState)
+                            ]
+                            [ text "Main switch enabled" ]
                         ]
                     ]
                 ]
@@ -598,6 +663,7 @@ compactListItem listStyles =
         [ Options.css "padding-top" "0"
         , Options.css "padding-bottom" "0"
         ]
+
 
 programmeEntry : Programme -> Material.Model -> Maybe String -> Maybe String -> Html Msg
 programmeEntry programme mdl currentProgramme pendingProgramme =

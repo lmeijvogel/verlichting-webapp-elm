@@ -1,9 +1,10 @@
-module JsonDecoders exposing (availableProgrammes, currentProgramme, activationResponse, vacationMode, liveState, PostProgrammeResult, VacationModeResult)
+module JsonDecoders exposing (availableProgrammes, currentProgramme, activationResponse, vacationMode, liveState, mainSwitchState, PostProgrammeResult, VacationModeResult)
 
 import Json.Decode as Decode
 import Json.Decode exposing (..)
 import Programme exposing (Programme)
 import LiveState exposing (LiveState)
+import MainSwitchState exposing (MainSwitchState)
 
 
 type alias PostProgrammeResult =
@@ -63,6 +64,24 @@ liveState =
                         LiveState.Live
                     else
                         LiveState.Simulation
+            in
+                Decode.succeed newState
+    in
+        field "state" bool
+            |> Decode.andThen convert
+
+
+mainSwitchState : Decoder MainSwitchState
+mainSwitchState =
+    let
+        convert : Bool -> Decoder MainSwitchState
+        convert state =
+            let
+                newState =
+                    if state then
+                        MainSwitchState.Enabled
+                    else
+                        MainSwitchState.Disabled
             in
                 Decode.succeed newState
     in
