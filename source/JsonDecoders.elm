@@ -3,7 +3,7 @@ module JsonDecoders exposing (availableProgrammes, currentProgramme, activationR
 import Json.Decode as Decode
 import Json.Decode exposing (..)
 import Programme exposing (Programme)
-import LiveState exposing (LiveState(..))
+import LiveState exposing (LiveState)
 
 
 type alias PostProgrammeResult =
@@ -60,9 +60,9 @@ liveState =
             let
                 newState =
                     if state then
-                        Live
+                        LiveState.Live
                     else
-                        Simulation
+                        LiveState.Simulation
             in
                 Decode.succeed newState
     in

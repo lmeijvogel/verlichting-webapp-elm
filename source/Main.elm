@@ -23,7 +23,7 @@ import Material.Typography as Typo
 import Programme exposing (Programme)
 import Light exposing (..)
 import Login
-import LiveState exposing (LiveState(..))
+import LiveState exposing (LiveState)
 import VacationMode exposing (VacationMode, timeOfDayToString)
 import JsonDecoders
 
@@ -66,7 +66,7 @@ type alias Model =
 init : ( Model, Cmd Msg )
 init =
     ( { loginState = Login.new
-      , liveState = Unknown
+      , liveState = LiveState.Unknown
       , availableProgrammes = []
       , currentProgramme = Nothing
       , pendingProgramme = Nothing
@@ -144,7 +144,7 @@ update msg model =
             ( { model | liveState = liveState }, Cmd.none )
 
         LiveStateReceived (Err _) ->
-            ( { model | liveState = LiveStateError }, Cmd.none )
+            ( { model | liveState = LiveState.Error }, Cmd.none )
 
         UsernameChanged username ->
             let
@@ -246,7 +246,7 @@ setLiveState newState =
     let
         stateString =
             case newState of
-                Simulation ->
+                LiveState.Simulation ->
                     "false"
 
                 _ ->
@@ -298,10 +298,10 @@ view model =
     let
         mainColor =
             case model.liveState of
-                Live ->
+                LiveState.Live ->
                     Color.Indigo
 
-                Simulation ->
+                LiveState.Simulation ->
                     Color.Teal
 
                 _ ->
@@ -365,10 +365,10 @@ drawer model =
                 Options.span [ css "width" "40px" ] []
 
         newLiveState =
-            if model.liveState == Live then
-                Simulation
+            if model.liveState == LiveState.Live then
+                LiveState.Simulation
             else
-                Live
+                LiveState.Live
     in
         div []
             [ MatList.ul []
@@ -379,7 +379,7 @@ drawer model =
                         [ Toggles.checkbox Mdl
                             [ 0 ]
                             model.mdl
-                            [ Toggles.value (model.liveState == Live)
+                            [ Toggles.value (model.liveState == LiveState.Live)
                             , Options.onToggle (LiveStateClicked newLiveState)
                             ]
                             [text "Web Live"]

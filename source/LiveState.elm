@@ -5,4 +5,4 @@ type LiveState
     = Unknown
     | Live
     | Simulation
-    | LiveStateError
+    | Error
