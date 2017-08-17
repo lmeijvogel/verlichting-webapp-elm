@@ -10,7 +10,6 @@ import Material.Card as Card
 import Material.Chip as Chip
 import Material.Color as Color
 import Material.Grid as Grid
-import Material.Icon as Icon
 import Material.Layout as Layout
 import Material.List as MatList
 import Material.Spinner as Spinner
@@ -405,12 +404,6 @@ view model =
 drawer : Model -> Html Msg
 drawer model =
     let
-        check x =
-            if x then
-                Icon.view "check" [ css "width" "40px" ]
-            else
-                Options.span [ css "width" "40px" ] []
-
         newLiveState =
             if model.liveState == LiveState.Live then
                 LiveState.Simulation
@@ -427,8 +420,7 @@ drawer model =
             [ MatList.ul []
                 [ MatList.li []
                     [ MatList.content
-                        [ Options.onClick (LiveStateClicked newLiveState)
-                        ]
+                        []
                         [ Toggles.checkbox Mdl
                             [ 0 ]
                             model.mdl
