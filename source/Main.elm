@@ -456,7 +456,7 @@ drawer model =
                             [ Toggles.value (model.liveState == LiveState.Live)
                             , Options.onToggle (LiveStateClicked newLiveState)
                             ]
-                            [text "Web Live"]
+                            [ text "Web Live" ]
                         ]
                     ]
                 , MatList.li []
