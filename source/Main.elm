@@ -381,10 +381,12 @@ view model =
             ]
             { header =
                 [ Layout.row [ Typo.title ]
-                    [ span
-                        [ Html.Attributes.style [ ( "margin-right", "20px" ) ] ]
-                        [ text "Verlichting" ]
-                    , span [] icons
+                    [ div [ Html.Attributes.style [ ( "height", "100%" ), ( "display", "flex" ), ( "flex-direction", "row" ), ( "align-items", "center" ) ] ]
+                        [ span
+                            [ Html.Attributes.style [ ( "margin-right", "20px" ) ] ]
+                            [ text "Verlichting" ]
+                        , span [ Html.Attributes.style [ ( "display", "flex" ), ( "align-items", "center" ) ] ] icons
+                        ]
                     ]
                 ]
             , drawer = [ drawer model ]
