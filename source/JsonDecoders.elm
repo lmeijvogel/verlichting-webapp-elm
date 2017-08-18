@@ -5,6 +5,7 @@ import Json.Decode exposing (..)
 import Programme exposing (Programme)
 import LiveState exposing (LiveState)
 import MainSwitchState exposing (MainSwitchState)
+import TimeOfDay exposing (TimeOfDay)
 
 
 type alias PostProgrammeResult =
@@ -16,6 +17,8 @@ type alias PostProgrammeResult =
 
 type alias VacationModeResult =
     { state : String
+    , start_time : TimeOfDay
+    , end_time : TimeOfDay
     }
 
 
@@ -50,7 +53,24 @@ activationResponse =
 
 vacationMode : Decoder VacationModeResult
 vacationMode =
-    map VacationModeResult (field "state" string)
+    let
+        convert : String -> Decoder TimeOfDay
+        convert input =
+            let
+                timeOfDayResult =
+                    TimeOfDay.timeOfDayFromString input
+            in
+                case timeOfDayResult of
+                    Ok timeOfDay ->
+                        Decode.succeed timeOfDay
+
+                    _ ->
+                        Decode.fail input
+    in
+        map3 VacationModeResult
+            (field "state" string)
+            ((field "start_time" string) |> Decode.andThen convert)
+            ((field "end_time" string) |> Decode.andThen convert)
 
 
 liveState : Decoder LiveState

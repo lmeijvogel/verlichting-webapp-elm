@@ -25,7 +25,8 @@ import Light exposing (..)
 import Login
 import LiveState exposing (LiveState)
 import MainSwitchState exposing (MainSwitchState)
-import VacationMode exposing (VacationMode, timeOfDayToString)
+import VacationMode exposing (VacationMode)
+import TimeOfDay exposing (timeOfDayToString)
 import JsonDecoders
 
 
