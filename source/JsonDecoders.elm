@@ -11,7 +11,6 @@ import TimeOfDay exposing (TimeOfDay)
 type alias PostProgrammeResult =
     { success : Bool
     , programme : String
-    , recipients : Int
     }
 
 
@@ -45,10 +44,9 @@ currentProgramme =
 
 activationResponse : Decoder PostProgrammeResult
 activationResponse =
-    map3 PostProgrammeResult
+    map2 PostProgrammeResult
         (field "success" bool)
         (field "programme" string)
-        (field "recipients" int)
 
 
 vacationMode : Decoder VacationModeResult
