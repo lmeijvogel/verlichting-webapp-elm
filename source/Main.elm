@@ -21,6 +21,7 @@ import Material.Textfield as Textfield
 import Material.Toggles as Toggles
 import Material.Typography as Typo
 import Programme exposing (Programme)
+import Json.Decode exposing (Decoder)
 import Light exposing (..)
 import Login
 import LiveState exposing (LiveState)
@@ -233,28 +234,27 @@ newLoginFormData =
     (LoginFormData "" "")
 
 
+type alias Url =
+    String
+
+
+get : Decoder a -> (Result Http.Error a -> Msg) -> Url -> Cmd Msg
+get decoder msg url =
+    let
+        request =
+            Http.get url decoder
+    in
+        Http.send msg request
+
+
 getAvailableProgrammes : Cmd Msg
 getAvailableProgrammes =
-    let
-        url =
-            "/my_zwave/available_programmes"
-
-        request =
-            Http.get url JsonDecoders.availableProgrammes
-    in
-        Http.send ProgrammesReceived request
+    get JsonDecoders.availableProgrammes ProgrammesReceived "/my_zwave/available_programmes"
 
 
 getLiveState : Cmd Msg
 getLiveState =
-    let
-        url =
-            "/my_zwave/live"
-
-        request =
-            Http.get url JsonDecoders.liveState
-    in
-        Http.send LiveStateReceived request
+    get JsonDecoders.liveState LiveStateReceived "/my_zwave/live"
 
 
 setLiveState : LiveState -> Cmd Msg
@@ -279,14 +279,7 @@ setLiveState newState =
 
 getMainSwitchState : Cmd Msg
 getMainSwitchState =
-    let
-        url =
-            "/my_zwave/main_switch"
-
-        request =
-            Http.get url JsonDecoders.mainSwitchState
-    in
-        Http.send MainSwitchStateReceived request
+    get JsonDecoders.mainSwitchState MainSwitchStateReceived "/my_zwave/main_switch"
 
 
 setMainSwitchState : MainSwitchState -> Cmd Msg
@@ -311,14 +304,7 @@ setMainSwitchState newState =
 
 getCurrentProgramme : Cmd Msg
 getCurrentProgramme =
-    let
-        url =
-            "/my_zwave/current_programme"
-
-        request =
-            Http.get url JsonDecoders.currentProgramme
-    in
-        Http.send CurrentProgrammeReceived request
+    get JsonDecoders.currentProgramme CurrentProgrammeReceived "/my_zwave/current_programme"
 
 
 activateProgramme : Programme -> Cmd Msg
