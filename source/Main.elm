@@ -128,10 +128,12 @@ update msg model =
             ( { model | pendingProgramme = Just programme.id }, activateProgramme programme )
 
         ActivationResponseReceived (Ok result) ->
-            if result.success then
-                ( { model | currentProgramme = Just result.programme, pendingProgramme = Nothing }, Cmd.map LightMsg Light.load )
-            else
-                ( { model | error = "Result was not success" }, Cmd.none )
+            case result of
+                JsonDecoders.Success programme ->
+                    ( { model | currentProgramme = Just programme, pendingProgramme = Nothing }, Cmd.map LightMsg Light.load )
+
+                JsonDecoders.Error ->
+                    ( { model | error = "Result was not success" }, Cmd.none )
 
         ActivationResponseReceived (Err _) ->
             ( { model | error = "An error occurred" }, Cmd.none )

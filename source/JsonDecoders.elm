@@ -1,4 +1,4 @@
-module JsonDecoders exposing (availableProgrammes, currentProgramme, activationResponse, vacationMode, liveState, mainSwitchState, PostProgrammeResult, VacationModeResult)
+module JsonDecoders exposing (availableProgrammes, currentProgramme, activationResponse, vacationMode, liveState, mainSwitchState, PostProgrammeResult(..), VacationModeResult)
 
 import Json.Decode as Decode
 import Json.Decode exposing (..)
@@ -8,10 +8,9 @@ import MainSwitchState exposing (MainSwitchState)
 import TimeOfDay exposing (TimeOfDay)
 
 
-type alias PostProgrammeResult =
-    { success : Bool
-    , programme : String
-    }
+type PostProgrammeResult
+    = Success String
+    | Error
 
 
 type alias VacationModeResult =
@@ -44,9 +43,15 @@ currentProgramme =
 
 activationResponse : Decoder PostProgrammeResult
 activationResponse =
-    map2 PostProgrammeResult
-        (field "success" bool)
-        (field "programme" string)
+    let
+        decodeResult : Bool -> Decoder PostProgrammeResult
+        decodeResult success =
+            if success then
+                map Success (field "programme" string)
+            else
+                Decode.succeed Error
+    in
+        field "success" bool |> Decode.andThen decodeResult
 
 
 vacationMode : Decoder VacationModeResult
