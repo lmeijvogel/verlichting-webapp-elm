@@ -54,9 +54,7 @@ type alias LoginFormData =
 type alias Model =
     { loginState : Login.LoginState
     , liveState : LiveState
-    , availableProgrammes : List Programme
-    , currentProgramme : Maybe String
-    , pendingProgramme : Maybe String
+    , programmesModel : ProgrammesModel
     , lights : List Light
     , editingLightId : Maybe Int
     , vacationMode : VacationMode
@@ -67,13 +65,26 @@ type alias Model =
     }
 
 
+type alias ProgrammesModel =
+    { availableProgrammes : List Programme
+    , currentProgramme : Maybe String
+    , pendingProgramme : Maybe String
+    }
+
+
+newProgrammesModel : ProgrammesModel
+newProgrammesModel =
+    { availableProgrammes = []
+    , currentProgramme = Nothing
+    , pendingProgramme = Nothing
+    }
+
+
 init : ( Model, Cmd Msg )
 init =
     ( { loginState = Login.new
       , liveState = LiveState.Unknown
-      , availableProgrammes = []
-      , currentProgramme = Nothing
-      , pendingProgramme = Nothing
+      , programmesModel = newProgrammesModel
       , lights = []
       , editingLightId = Nothing
       , vacationMode = VacationMode.new
@@ -113,24 +124,40 @@ update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
         ProgrammesReceived (Ok availableProgrammes) ->
-            ( { model | availableProgrammes = availableProgrammes }, getCurrentProgramme )
+            let
+                programmesModel =
+                    model.programmesModel
+            in
+                ( { model | programmesModel = { programmesModel | availableProgrammes = availableProgrammes } }, getCurrentProgramme )
 
         ProgrammesReceived (Err error) ->
             ( { model | error = "Could not retrieve programmes list: " ++ (toString error) }, Cmd.none )
 
         CurrentProgrammeReceived (Ok id) ->
-            ( { model | currentProgramme = Just id }, Cmd.none )
+            let
+                programmesModel =
+                    model.programmesModel
+            in
+                ( { model | programmesModel = { programmesModel | currentProgramme = Just id } }, Cmd.none )
 
         CurrentProgrammeReceived (Err _) ->
             ( { model | error = "Could not retrieve current programme" }, Cmd.none )
 
         ProgrammeClicked programme ->
-            ( { model | pendingProgramme = Just programme.id }, activateProgramme programme )
+            let
+                programmesModel =
+                    model.programmesModel
+            in
+                ( { model | programmesModel = { programmesModel | pendingProgramme = Just programme.id } }, activateProgramme programme )
 
         ActivationResponseReceived (Ok result) ->
             case result of
                 JsonDecoders.Success programme ->
-                    ( { model | currentProgramme = Just programme, pendingProgramme = Nothing }, Cmd.map LightMsg Light.load )
+                    let
+                        programmesModel =
+                            model.programmesModel
+                    in
+                        ( { model | programmesModel = { programmesModel | currentProgramme = Just programme, pendingProgramme = Nothing } }, Cmd.map LightMsg Light.load )
 
                 JsonDecoders.Error ->
                     ( { model | error = "Result was not success" }, Cmd.none )
@@ -508,15 +535,19 @@ loginCard model =
 
 programmesCard : Model -> Html Msg
 programmesCard model =
-    Card.view []
-        [ Card.title []
-            [ Options.styled p [ Typo.title ] [ text "Programma's" ]
+    let
+        programmesModel =
+            model.programmesModel
+    in
+        Card.view []
+            [ Card.title []
+                [ Options.styled p [ Typo.title ] [ text "Programma's" ]
+                ]
+            , Card.text []
+                [ MatList.ul []
+                    (List.map (\programme -> programmeEntry programme model.mdl programmesModel.currentProgramme programmesModel.pendingProgramme) programmesModel.availableProgrammes)
+                ]
             ]
-        , Card.text []
-            [ MatList.ul []
-                (List.map (\programme -> programmeEntry programme model.mdl model.currentProgramme model.pendingProgramme) model.availableProgrammes)
-            ]
-        ]
 
 
 vacationModeCard : Model -> Html Msg
