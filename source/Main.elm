@@ -21,6 +21,7 @@ import Material.Textfield as Textfield
 import Material.Toggles as Toggles
 import Material.Typography as Typo
 import Programmes.Model exposing (..)
+import Programmes.Update
 import Json.Decode exposing (Decoder)
 import Light exposing (..)
 import Login
@@ -91,9 +92,9 @@ type Msg
     | PasswordChanged String
     | SubmitLogin
     | LoginMsg Login.Msg
+    | ProgrammeMsg Programmes.Update.Msg
     | ProgrammesReceived (Result Http.Error (List Programme))
     | CurrentProgrammeReceived (Result Http.Error String)
-    | ProgrammeClicked Programme
     | ActivationResponseReceived (Result Http.Error JsonDecoders.PostProgrammeResult)
     | VacationModeMsg VacationMode.Msg
     | ShowLight (Maybe Light)
@@ -128,12 +129,17 @@ update msg model =
         CurrentProgrammeReceived (Err _) ->
             ( { model | error = "Could not retrieve current programme" }, Cmd.none )
 
-        ProgrammeClicked programme ->
+        ProgrammeMsg msg ->
             let
-                programmesModel =
-                    model.programmesModel
+                newProgrammesModel : ProgrammesModel
+                newProgrammesModel = Programmes.Update.update msg model.programmesModel
+
+                nextAction =
+                  case newProgrammesModel.pendingProgramme of
+                    Just programmeId -> activateProgramme programmeId
+                    Nothing -> Cmd.none
             in
-                ( { model | programmesModel = { programmesModel | pendingProgramme = Just programme.id } }, activateProgramme programme )
+                ( { model | programmesModel = newProgrammesModel }, nextAction)
 
         ActivationResponseReceived (Ok result) ->
             case result of
@@ -321,11 +327,11 @@ getCurrentProgramme =
     get JsonDecoders.currentProgramme CurrentProgrammeReceived "/my_zwave/current_programme"
 
 
-activateProgramme : Programme -> Cmd Msg
-activateProgramme programme =
+activateProgramme : String -> Cmd Msg
+activateProgramme programmeId =
     let
         url =
-            "/my_zwave/programme/" ++ programme.id ++ "/start"
+            "/my_zwave/programme/" ++ programmeId ++ "/start"
 
         request =
             Http.post url Http.emptyBody JsonDecoders.activationResponse
@@ -717,7 +723,7 @@ programmeEntry programme mdl currentProgramme pendingProgramme =
                     [ 0 ]
                     mdl
                     (List.concat
-                        [ [ Options.onClick (ProgrammeClicked programme)
+                        [ [ Options.onClick (ProgrammeMsg (Programmes.Update.ProgrammeClicked programme))
                           ]
                         , buttonStyles
                         ]
