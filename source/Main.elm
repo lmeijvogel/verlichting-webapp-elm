@@ -20,7 +20,7 @@ import Material.Slider as Slider
 import Material.Textfield as Textfield
 import Material.Toggles as Toggles
 import Material.Typography as Typo
-import Programme exposing (Programme)
+import Programmes.Model exposing (..)
 import Json.Decode exposing (Decoder)
 import Light exposing (..)
 import Login
@@ -62,21 +62,6 @@ type alias Model =
     , error : String
     , loginFormData : LoginFormData
     , mdl : Material.Model
-    }
-
-
-type alias ProgrammesModel =
-    { availableProgrammes : List Programme
-    , currentProgramme : Maybe String
-    , pendingProgramme : Maybe String
-    }
-
-
-newProgrammesModel : ProgrammesModel
-newProgrammesModel =
-    { availableProgrammes = []
-    , currentProgramme = Nothing
-    , pendingProgramme = Nothing
     }
 
 

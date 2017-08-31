@@ -2,7 +2,7 @@ module JsonDecoders exposing (availableProgrammes, currentProgramme, activationR
 
 import Json.Decode as Decode
 import Json.Decode exposing (..)
-import Programme exposing (Programme)
+import Programmes.Model exposing (Programme)
 import LiveState exposing (LiveState)
 import MainSwitchState exposing (MainSwitchState)
 import TimeOfDay exposing (TimeOfDay)
