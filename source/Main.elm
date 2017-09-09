@@ -22,6 +22,7 @@ import Material.Toggles as Toggles
 import Material.Typography as Typo
 import Programmes.Model exposing (..)
 import Programmes.Update
+import Programmes.View
 import Json.Decode exposing (Decoder)
 import Light exposing (..)
 import Login
@@ -93,9 +94,6 @@ type Msg
     | SubmitLogin
     | LoginMsg Login.Msg
     | ProgrammeMsg Programmes.Update.Msg
-    | ProgrammesReceived (Result Http.Error (List Programme))
-    | CurrentProgrammeReceived (Result Http.Error String)
-    | ActivationResponseReceived (Result Http.Error JsonDecoders.PostProgrammeResult)
     | VacationModeMsg VacationMode.Msg
     | ShowLight (Maybe Light)
     | LightMsg Light.Msg
@@ -109,52 +107,11 @@ type Msg
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
-        ProgrammesReceived (Ok availableProgrammes) ->
-            let
-                programmesModel =
-                    model.programmesModel
-            in
-                ( { model | programmesModel = { programmesModel | availableProgrammes = availableProgrammes } }, getCurrentProgramme )
-
-        ProgrammesReceived (Err error) ->
-            ( { model | error = "Could not retrieve programmes list: " ++ (toString error) }, Cmd.none )
-
-        CurrentProgrammeReceived (Ok id) ->
-            let
-                programmesModel =
-                    model.programmesModel
-            in
-                ( { model | programmesModel = { programmesModel | currentProgramme = Just id } }, Cmd.none )
-
-        CurrentProgrammeReceived (Err _) ->
-            ( { model | error = "Could not retrieve current programme" }, Cmd.none )
-
         ProgrammeMsg msg ->
             let
-                newProgrammesModel : ProgrammesModel
-                newProgrammesModel = Programmes.Update.update msg model.programmesModel
-
-                nextAction =
-                  case newProgrammesModel.pendingProgramme of
-                    Just programmeId -> activateProgramme programmeId
-                    Nothing -> Cmd.none
+                (newProgrammesModel, action) = Programmes.Update.update msg model.programmesModel
             in
-                ( { model | programmesModel = newProgrammesModel }, nextAction)
-
-        ActivationResponseReceived (Ok result) ->
-            case result of
-                JsonDecoders.Success programme ->
-                    let
-                        programmesModel =
-                            model.programmesModel
-                    in
-                        ( { model | programmesModel = { programmesModel | currentProgramme = Just programme, pendingProgramme = Nothing } }, Cmd.map LightMsg Light.load )
-
-                JsonDecoders.Error ->
-                    ( { model | error = "Result was not success" }, Cmd.none )
-
-        ActivationResponseReceived (Err _) ->
-            ( { model | error = "An error occurred" }, Cmd.none )
+                ( { model | programmesModel = newProgrammesModel }, Cmd.map ProgrammeMsg action)
 
         LightMsg msg ->
             case Light.update msg model.lights of
@@ -241,7 +198,7 @@ update msg model =
 initialize : Cmd Msg
 initialize =
     Cmd.batch
-        [ getAvailableProgrammes
+        [ Cmd.map ProgrammeMsg Programmes.Update.load
         , getLiveState
         , getMainSwitchState
         , Cmd.map LightMsg Light.load
@@ -266,10 +223,6 @@ get decoder msg url =
     in
         Http.send msg request
 
-
-getAvailableProgrammes : Cmd Msg
-getAvailableProgrammes =
-    get JsonDecoders.availableProgrammes ProgrammesReceived "/my_zwave/available_programmes"
 
 
 getLiveState : Cmd Msg
@@ -320,23 +273,6 @@ setMainSwitchState newState =
             Http.post url Http.emptyBody JsonDecoders.mainSwitchState
     in
         Http.send MainSwitchStateReceived request
-
-
-getCurrentProgramme : Cmd Msg
-getCurrentProgramme =
-    get JsonDecoders.currentProgramme CurrentProgrammeReceived "/my_zwave/current_programme"
-
-
-activateProgramme : String -> Cmd Msg
-activateProgramme programmeId =
-    let
-        url =
-            "/my_zwave/programme/" ++ programmeId ++ "/start"
-
-        request =
-            Http.post url Http.emptyBody JsonDecoders.activationResponse
-    in
-        Http.send ActivationResponseReceived request
 
 
 
@@ -419,7 +355,7 @@ view model =
                         div []
                             [ Grid.grid []
                                 [ Grid.cell [ Grid.size Grid.Phone 4, Grid.size Grid.Tablet 8, Grid.size Grid.Desktop 4 ]
-                                    [ programmesCard model
+                                    [ Html.map ProgrammeMsg (Programmes.View.view model.mdl model.programmesModel)
                                     ]
                                 , Grid.cell [ Grid.size Grid.Phone 4, Grid.size Grid.Tablet 8, Grid.size Grid.Desktop 4 ]
                                     [ vacationModeCard model
@@ -522,23 +458,6 @@ loginCard model =
                 ]
             ]
         ]
-
-
-programmesCard : Model -> Html Msg
-programmesCard model =
-    let
-        programmesModel =
-            model.programmesModel
-    in
-        Card.view []
-            [ Card.title []
-                [ Options.styled p [ Typo.title ] [ text "Programma's" ]
-                ]
-            , Card.text []
-                [ MatList.ul []
-                    (List.map (\programme -> programmeEntry programme model.mdl programmesModel.currentProgramme programmesModel.pendingProgramme) programmesModel.availableProgrammes)
-                ]
-            ]
 
 
 vacationModeCard : Model -> Html Msg
@@ -697,40 +616,6 @@ compactListItem listStyles =
         [ Options.css "padding-top" "0"
         , Options.css "padding-bottom" "0"
         ]
-
-
-programmeEntry : Programme -> Material.Model -> Maybe String -> Maybe String -> Html Msg
-programmeEntry programme mdl currentProgramme pendingProgramme =
-    let
-        commonButtonStyles =
-            [ Options.css "width" "100%" ]
-
-        extraButtonStyles =
-            if currentProgramme == Just programme.id then
-                [ Button.ripple, Button.colored, Button.raised ]
-            else if pendingProgramme == Just programme.id then
-                [ Button.ripple, Button.raised ]
-            else
-                []
-
-        buttonStyles =
-            commonButtonStyles ++ extraButtonStyles
-    in
-        compactListItem []
-            [ MatList.content
-                []
-                [ Button.render Mdl
-                    [ 0 ]
-                    mdl
-                    (List.concat
-                        [ [ Options.onClick (ProgrammeMsg (Programmes.Update.ProgrammeClicked programme))
-                          ]
-                        , buttonStyles
-                        ]
-                    )
-                    [ text programme.name ]
-                ]
-            ]
 
 
 lightEntry : Light -> Html Msg
