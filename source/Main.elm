@@ -7,7 +7,6 @@ import Html.Events exposing (onInput, onClick)
 import Material
 import Material.Button as Button
 import Material.Card as Card
-import Material.Chip as Chip
 import Material.Color as Color
 import Material.Grid as Grid
 import Material.Icon as Icon
@@ -16,7 +15,6 @@ import Material.List as MatList
 import Material.Spinner as Spinner
 import Material.Options as Options exposing (css)
 import Material.Scheme as Scheme
-import Material.Slider as Slider
 import Material.Textfield as Textfield
 import Material.Toggles as Toggles
 import Material.Typography as Typo
@@ -24,7 +22,9 @@ import Programmes.Model exposing (..)
 import Programmes.Update
 import Programmes.View
 import Json.Decode exposing (Decoder)
-import Light exposing (..)
+import Lights.Model exposing (..)
+import Lights.Update exposing (..)
+import Lights.View exposing (..)
 import Login
 import LiveState exposing (LiveState)
 import MainSwitchState exposing (MainSwitchState)
@@ -57,7 +57,7 @@ type alias Model =
     { loginState : Login.LoginState
     , liveState : LiveState
     , programmesModel : ProgrammesModel
-    , lights : List Light
+    , lightsModel : LightsModel
     , editingLightId : Maybe Int
     , vacationMode : VacationMode
     , mainSwitchState : MainSwitchState
@@ -72,7 +72,7 @@ init =
     ( { loginState = Login.new
       , liveState = LiveState.Unknown
       , programmesModel = newProgrammesModel
-      , lights = []
+      , lightsModel = newLightsModel
       , editingLightId = Nothing
       , vacationMode = VacationMode.new
       , mainSwitchState = MainSwitchState.Unknown
@@ -95,8 +95,7 @@ type Msg
     | LoginMsg Login.Msg
     | ProgrammeMsg Programmes.Update.Msg
     | VacationModeMsg VacationMode.Msg
-    | ShowLight (Maybe Light)
-    | LightMsg Light.Msg
+    | LightMsg Lights.Update.Msg
     | LiveStateClicked LiveState
     | LiveStateReceived (Result Http.Error LiveState)
     | MainSwitchStateClicked MainSwitchState
@@ -114,12 +113,10 @@ update msg model =
                 ( { model | programmesModel = newProgrammesModel }, Cmd.map ProgrammeMsg action)
 
         LightMsg msg ->
-            case Light.update msg model.lights of
-                ( Ok lights, cmd ) ->
-                    ( { model | lights = lights }, Cmd.map LightMsg cmd )
-
-                ( Err error, cmd ) ->
-                    ( { model | error = toString error }, Cmd.map LightMsg cmd )
+          let
+              (newLightsModel, action) = Lights.Update.update msg model.lightsModel
+          in
+            ( { model | lightsModel = newLightsModel }, Cmd.map LightMsg action)
 
         LiveStateClicked liveState ->
             ( model, setLiveState liveState )
@@ -187,9 +184,6 @@ update msg model =
             in
                 ( { model | vacationMode = newVacationMode }, Cmd.map VacationModeMsg cmd )
 
-        ShowLight light ->
-            ( { model | editingLightId = (Maybe.map (\l -> l.id) light) }, Cmd.none )
-
         -- Boilerplate: Mdl action handler.
         Mdl msg_ ->
             Material.update Mdl msg_ model
@@ -201,7 +195,7 @@ initialize =
         [ Cmd.map ProgrammeMsg Programmes.Update.load
         , getLiveState
         , getMainSwitchState
-        , Cmd.map LightMsg Light.load
+        , Cmd.map LightMsg Lights.Update.load
         , Cmd.map VacationModeMsg VacationMode.load
         ]
 
@@ -361,7 +355,7 @@ view model =
                                     [ vacationModeCard model
                                     ]
                                 , Grid.cell [ Grid.size Grid.Phone 4, Grid.size Grid.Tablet 8, Grid.size Grid.Desktop 4 ]
-                                    [ lightsCard model
+                                    [ Html.map LightMsg (Lights.View.view model.mdl model.lightsModel)
                                     ]
                                 ]
                             , div [] [ text model.error ]
@@ -536,80 +530,6 @@ vacationModeCard model =
             ]
 
 
-lightsCard : Model -> Html Msg
-lightsCard model =
-    case model.editingLightId of
-        Just editingLightId ->
-            let
-                light : Maybe Light
-                light =
-                    List.filter (\l -> l.id == editingLightId) model.lights |> List.head
-            in
-                case light of
-                    Just light ->
-                        singleLightCard light model
-
-                    Nothing ->
-                        text "Unknown light selected!"
-
-        Nothing ->
-            Card.view []
-                [ Card.title []
-                    [ Options.styled p [ Typo.title ] [ text "Lichten" ]
-                    ]
-                , Card.text []
-                    [ MatList.ul []
-                        (List.map (\light -> lightEntry light) model.lights)
-                    ]
-                ]
-
-
-singleLightCard : Light -> Model -> Html Msg
-singleLightCard light model =
-    Card.view []
-        [ Card.title []
-            [ Options.styled p [ Typo.title ] [ text light.displayName ]
-            ]
-        , Card.text []
-            [ case light.value of
-                State currentState ->
-                    Toggles.switch Mdl
-                        [ 0 ]
-                        model.mdl
-                        [ Options.onToggle (LightMsg (Update light (State (not currentState)) True))
-                        , Toggles.ripple
-                        , Toggles.value currentState
-                        ]
-                        [ text "Switch" ]
-
-                Level currentLevel ->
-                    div []
-                        [ Slider.view
-                            [ Slider.onChange (newIntensityRequested light)
-                            , Options.onMouseUp (LightMsg (Save light))
-                            , Slider.value (toFloat currentLevel)
-                            , Slider.max 99
-                            , Slider.min 0
-                            ]
-                        , text (toString currentLevel)
-                        ]
-            ]
-        , Card.actions
-            [ Card.border ]
-            [ Button.render Mdl
-                [ 1, 0 ]
-                model.mdl
-                [ Button.ripple, Button.accent, Options.onClick (ShowLight Nothing) ]
-                [ text "Close" ]
-            ]
-        ]
-
-
-newIntensityRequested : Light -> Float -> Msg
-newIntensityRequested light level =
-    LightMsg (Update light (Level (round level)) False)
-
-
 compactListItem : List (Options.Property c m) -> List (Html m) -> Html m
 compactListItem listStyles =
     MatList.li
@@ -617,66 +537,6 @@ compactListItem listStyles =
         , Options.css "padding-bottom" "0"
         ]
 
-
-lightEntry : Light -> Html Msg
-lightEntry light =
-    let
-        valueDisplay =
-            case light.value of
-                State state ->
-                    if state then
-                        "On"
-                    else
-                        "-"
-
-                Level level ->
-                    if level == 0 then
-                        "-"
-                    else
-                        (toString level)
-
-        chipBackgroundColor =
-            case valueDisplay of
-                "-" ->
-                    Color.color Color.Blue Color.S100
-
-                _ ->
-                    Color.color Color.Amber Color.S600
-
-        valueBackgroundColor =
-            case valueDisplay of
-                "-" ->
-                    Color.color Color.Blue Color.S100
-
-                _ ->
-                    Color.color Color.Yellow Color.S300
-
-        valueForegroundColor =
-            case valueDisplay of
-                "-" ->
-                    Color.white
-
-                _ ->
-                    Color.black
-    in
-        compactListItem []
-            [ MatList.content []
-                [ Chip.span
-                    [ Options.css "width" "100%"
-                    , Color.background (chipBackgroundColor)
-                    , Options.onClick (ShowLight (Just light))
-                    ]
-                    [ Chip.contact Html.span
-                        [ Color.background valueBackgroundColor
-                        , Color.text valueForegroundColor
-                        ]
-                        [ text valueDisplay ]
-                    , Chip.content []
-                        [ text light.displayName
-                        ]
-                    ]
-                ]
-            ]
 
 
 subscriptions : Model -> Sub Msg

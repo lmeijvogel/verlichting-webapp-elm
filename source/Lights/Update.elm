@@ -1,27 +1,16 @@
-module Light exposing (Light, LightValue(..), Msg(Update, Save), load, update, save)
+module Lights.Update exposing (..)
 
 import Http
-import Json.Decode exposing (..)
-
-
-type LightValue
-    = Level Int
-    | State Bool
-
-
-type alias Light =
-    { id : Int
-    , name : String
-    , displayName : String
-    , value : LightValue
-    }
-
+import Lights.Model exposing (..)
+import Material
 
 type Msg
     = Received (Result Http.Error (List Light))
+    | ShowLight (Maybe Light)
     | Update Light LightValue Bool
     | Save Light
     | ChangeAcknowledged (Result Http.Error LightValue)
+    | Mdl (Material.Msg Msg)
 
 
 load : Cmd Msg
@@ -36,14 +25,17 @@ load =
         Http.send Received request
 
 
-update : Msg -> List Light -> ( Result Http.Error (List Light), Cmd Msg )
-update msg lights =
+update : Msg -> LightsModel -> (LightsModel, Cmd Msg )
+update msg lightsModel =
     case msg of
         Received (Ok newLights) ->
-            ( Ok newLights, Cmd.none )
+            ( { lightsModel | lights = newLights }, Cmd.none )
 
         Received (Err error) ->
-            ( Err error, Cmd.none )
+            ( { lightsModel | error = Just "Error receiving lights" }, Cmd.none )
+
+        ShowLight light ->
+            ( { lightsModel | editingLightId = (Maybe.map (\l -> l.id) light) }, Cmd.none )
 
         {- The `saveAfter` here is a workaround for a usability "quirk":
            - When a Slider is used, we don't want to bombard the server with
@@ -62,29 +54,30 @@ update msg lights =
                         (save newLight)
                     else
                         Cmd.none
-            in
-                ( Ok
-                    (List.map
+                newLights = (List.map
                         (\l ->
                             if l.id == light.id then
                                 newLight
                             else
                                 l
                         )
-                        lights
+                        lightsModel.lights
                     )
-                , nextCommand
-                )
+
+            in
+                ( { lightsModel | lights = newLights }, nextCommand )
 
         Save light ->
-            ( Ok lights, save light )
+            ( lightsModel, save light )
 
         ChangeAcknowledged (Ok _) ->
-            ( Ok lights, Cmd.none )
+            ( lightsModel, Cmd.none )
 
         ChangeAcknowledged (Err error) ->
-            ( Err error, Cmd.none )
+            ( { lightsModel | error = Just "Error saving change" }, Cmd.none )
 
+        Mdl msg_ ->
+            Material.update Mdl msg_ lightsModel
 
 save : Light -> Cmd Msg
 save light =
@@ -110,27 +103,9 @@ save light =
         Http.send ChangeAcknowledged request
 
 
-decodeLights : Decoder (List Light)
-decodeLights =
-    let
-        toLight : Decoder Light
-        toLight =
-            map4 Light
-                (field "node_id" int)
-                (field "name" string)
-                (field "display_name" string)
-                (oneOf
-                    [ map Level (field "value" int)
-                    , map State (field "state" bool)
-                    ]
-                )
-    in
-        field "lights" (list toLight)
+newIntensityRequested : Light -> Float -> Msg
+newIntensityRequested light level =
+    Update light (Level (round level)) False
 
 
-decodeChangeResponse : Decoder LightValue
-decodeChangeResponse =
-    oneOf
-        [ map Level (field "level" int)
-        , map State (field "state" bool)
-        ]
+
