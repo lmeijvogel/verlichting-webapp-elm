@@ -3,7 +3,6 @@ module Main exposing (..)
 import Http
 import Html exposing (Html, ul, li, div, span, p, text, button, label, input)
 import Html.Attributes exposing (placeholder, href, rel, type_, value)
-import Html.Events exposing (onInput, onClick)
 import Material
 import Material.Button as Button
 import Material.Card as Card
@@ -28,8 +27,9 @@ import Lights.View exposing (..)
 import Login
 import LiveState exposing (LiveState)
 import MainSwitchState exposing (MainSwitchState)
-import VacationMode exposing (VacationMode)
-import TimeOfDay exposing (timeOfDayToString)
+import VacationMode.Model exposing (..)
+import VacationMode.Update
+import VacationMode.View
 import JsonDecoders
 
 
@@ -59,7 +59,7 @@ type alias Model =
     , programmesModel : ProgrammesModel
     , lightsModel : LightsModel
     , editingLightId : Maybe Int
-    , vacationMode : VacationMode
+    , vacationModeModel : VacationModeModel
     , mainSwitchState : MainSwitchState
     , error : String
     , loginFormData : LoginFormData
@@ -74,7 +74,7 @@ init =
       , programmesModel = newProgrammesModel
       , lightsModel = newLightsModel
       , editingLightId = Nothing
-      , vacationMode = VacationMode.new
+      , vacationModeModel = VacationMode.Model.new
       , mainSwitchState = MainSwitchState.Unknown
       , error = ""
       , loginFormData = newLoginFormData
@@ -94,7 +94,7 @@ type Msg
     | SubmitLogin
     | LoginMsg Login.Msg
     | ProgrammeMsg Programmes.Update.Msg
-    | VacationModeMsg VacationMode.Msg
+    | VacationModeMsg VacationMode.Update.Msg
     | LightMsg Lights.Update.Msg
     | LiveStateClicked LiveState
     | LiveStateReceived (Result Http.Error LiveState)
@@ -178,11 +178,10 @@ update msg model =
                 ( model, Cmd.map LoginMsg (Login.logIn username password) )
 
         VacationModeMsg msg ->
-            let
-                ( newVacationMode, cmd ) =
-                    VacationMode.update msg model.vacationMode
-            in
-                ( { model | vacationMode = newVacationMode }, Cmd.map VacationModeMsg cmd )
+          let
+              (newVacationModeModel, action) = VacationMode.Update.update msg model.vacationModeModel
+          in
+            ( { model | vacationModeModel = newVacationModeModel }, Cmd.map VacationModeMsg action)
 
         -- Boilerplate: Mdl action handler.
         Mdl msg_ ->
@@ -196,7 +195,7 @@ initialize =
         , getLiveState
         , getMainSwitchState
         , Cmd.map LightMsg Lights.Update.load
-        , Cmd.map VacationModeMsg VacationMode.load
+        , Cmd.map VacationModeMsg VacationMode.Update.load
         ]
 
 
@@ -292,7 +291,7 @@ view model =
                     Color.BlueGrey
 
         scheduleIcon =
-            if model.vacationMode.state then
+            if model.vacationModeModel.state then
                 [ Icon.i "schedule" ]
             else
                 []
@@ -352,7 +351,7 @@ view model =
                                     [ Html.map ProgrammeMsg (Programmes.View.view model.mdl model.programmesModel)
                                     ]
                                 , Grid.cell [ Grid.size Grid.Phone 4, Grid.size Grid.Tablet 8, Grid.size Grid.Desktop 4 ]
-                                    [ vacationModeCard model
+                                    [ Html.map VacationModeMsg (VacationMode.View.view model.mdl model.vacationModeModel)
                                     ]
                                 , Grid.cell [ Grid.size Grid.Phone 4, Grid.size Grid.Tablet 8, Grid.size Grid.Desktop 4 ]
                                     [ Html.map LightMsg (Lights.View.view model.mdl model.lightsModel)
@@ -452,92 +451,6 @@ loginCard model =
                 ]
             ]
         ]
-
-
-vacationModeCard : Model -> Html Msg
-vacationModeCard model =
-    let
-        on =
-            model.vacationMode.state
-
-        buttonText =
-            if on then
-                "Disable"
-            else
-                "Enable"
-
-        buttonAction =
-            if on then
-                VacationModeMsg VacationMode.Disable
-            else
-                VacationModeMsg VacationMode.Enable
-    in
-        Card.view []
-            [ Card.title []
-                [ let
-                    titleText =
-                        if on then
-                            "Vacation mode is ON"
-                        else
-                            "Vacation mode is OFF"
-                  in
-                    Options.styled p [ Typo.title ] [ text titleText ]
-                ]
-            , Card.text []
-                [ MatList.ul []
-                    [ MatList.li []
-                        [ MatList.content []
-                            [ text "Average start time:"
-                            ]
-                        , MatList.content2 []
-                            [ if on then
-                                text (timeOfDayToString model.vacationMode.averageStartTime)
-                              else
-                                input
-                                    [ type_ "time"
-                                    , value (timeOfDayToString model.vacationMode.averageStartTime)
-                                    , onInput (\s -> VacationModeMsg (VacationMode.StartTimeChanged s))
-                                    ]
-                                    []
-                            ]
-                        ]
-                    , MatList.li []
-                        [ MatList.content []
-                            [ text "Average end time:"
-                            ]
-                        , MatList.content2 []
-                            [ if on then
-                                text (timeOfDayToString model.vacationMode.averageEndTime)
-                              else
-                                input
-                                    [ type_ "time"
-                                    , value (timeOfDayToString model.vacationMode.averageEndTime)
-                                    , onInput (\s -> VacationModeMsg (VacationMode.EndTimeChanged s))
-                                    ]
-                                    []
-                            ]
-                        ]
-                    ]
-                ]
-            , Card.actions
-                [ Card.border ]
-                [ Button.render Mdl
-                    [ 1, 0 ]
-                    model.mdl
-                    [ Button.ripple, Button.accent, Options.onClick buttonAction ]
-                    [ text buttonText ]
-                ]
-            ]
-
-
-compactListItem : List (Options.Property c m) -> List (Html m) -> Html m
-compactListItem listStyles =
-    MatList.li
-        [ Options.css "padding-top" "0"
-        , Options.css "padding-bottom" "0"
-        ]
-
-
 
 subscriptions : Model -> Sub Msg
 subscriptions model =

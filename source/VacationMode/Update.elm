@@ -1,46 +1,12 @@
-module VacationMode
-    exposing
-        ( VacationMode
-        , Msg(Enable, Disable, StartTimeChanged, EndTimeChanged)
-        , new
-        , update
-        , load
-        )
+module VacationMode.Update exposing (load, update, Msg(..))
 
-import TimeOfDay exposing (TimeOfDay, timeOfDayFromString, timeOfDayToString)
-import JsonDecoders
 import Http
 import Json.Encode
+import Material
 
-
-type alias VacationMode =
-    { state : Bool
-    , averageStartTime : TimeOfDay
-    , averageEndTime : TimeOfDay
-    , error : String
-    }
-
-
-new : VacationMode
-new =
-    { state = False
-    , averageStartTime = TimeOfDay 18 30
-    , averageEndTime = TimeOfDay 22 30
-    , error = ""
-    }
-
-
-load : Cmd Msg
-load =
-    let
-        url =
-            "/my_zwave/vacation_mode"
-
-        request =
-            Http.get url JsonDecoders.vacationMode
-    in
-        Http.send Received request
-
+import JsonDecoders
+import VacationMode.Model exposing (VacationModeModel)
+import TimeOfDay exposing (..)
 
 type Msg
     = Enable
@@ -48,13 +14,14 @@ type Msg
     | Received (Result Http.Error JsonDecoders.VacationModeResult)
     | StartTimeChanged String
     | EndTimeChanged String
+    | Mdl (Material.Msg Msg)
 
 
 
 -- UPDATE
 
 
-update : Msg -> VacationMode -> ( VacationMode, Cmd Msg )
+update : Msg -> VacationModeModel -> ( VacationModeModel, Cmd Msg )
 update msg vacationMode =
     case msg of
         Enable ->
@@ -92,9 +59,11 @@ update msg vacationMode =
 
         Received (Err error) ->
             ( { vacationMode | error = toString error }, Cmd.none )
+        Mdl msg_ ->
+            Material.update Mdl msg_ vacationMode
 
 
-sendNewVacationModeState : VacationMode -> Cmd Msg
+sendNewVacationModeState : VacationModeModel -> Cmd Msg
 sendNewVacationModeState vacationMode =
     let
         stateJson =
@@ -118,3 +87,16 @@ sendNewVacationModeState vacationMode =
             Http.post url requestData JsonDecoders.vacationMode
     in
         Http.send Received request
+
+load : Cmd Msg
+load =
+    let
+        url =
+            "/my_zwave/vacation_mode"
+
+        request =
+            Http.get url JsonDecoders.vacationMode
+    in
+        Http.send Received request
+
+
