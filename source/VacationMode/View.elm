@@ -3,20 +3,20 @@ module VacationMode.View exposing (view)
 import Html exposing (Html, ul, li, div, span, p, text, button, label, input)
 import Html.Attributes exposing (placeholder, href, rel, type_, value)
 import Html.Events exposing (onInput, onClick)
-
 import Material
 import Material.Button as Button
 import Material.Card as Card
 import Material.List as MatList
 import Material.Options as Options exposing (css)
 import Material.Typography as Typo
-
 import TimeOfDay exposing (..)
 import VacationMode.Model exposing (..)
 import VacationMode.Update exposing (Msg)
 
+
 type alias Mdl =
     Material.Model
+
 
 view : Material.Model -> VacationModeModel -> Html Msg
 view mdl vacationModeModel =
@@ -92,5 +92,3 @@ view mdl vacationModeModel =
                     [ text buttonText ]
                 ]
             ]
-
-

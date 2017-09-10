@@ -108,15 +108,17 @@ update msg model =
     case msg of
         ProgrammeMsg msg ->
             let
-                (newProgrammesModel, action) = Programmes.Update.update msg model.programmesModel
+                ( newProgrammesModel, action ) =
+                    Programmes.Update.update msg model.programmesModel
             in
-                ( { model | programmesModel = newProgrammesModel }, Cmd.map ProgrammeMsg action)
+                ( { model | programmesModel = newProgrammesModel }, Cmd.map ProgrammeMsg action )
 
         LightMsg msg ->
-          let
-              (newLightsModel, action) = Lights.Update.update msg model.lightsModel
-          in
-            ( { model | lightsModel = newLightsModel }, Cmd.map LightMsg action)
+            let
+                ( newLightsModel, action ) =
+                    Lights.Update.update msg model.lightsModel
+            in
+                ( { model | lightsModel = newLightsModel }, Cmd.map LightMsg action )
 
         LiveStateClicked liveState ->
             ( model, setLiveState liveState )
@@ -178,10 +180,11 @@ update msg model =
                 ( model, Cmd.map LoginMsg (Login.logIn username password) )
 
         VacationModeMsg msg ->
-          let
-              (newVacationModeModel, action) = VacationMode.Update.update msg model.vacationModeModel
-          in
-            ( { model | vacationModeModel = newVacationModeModel }, Cmd.map VacationModeMsg action)
+            let
+                ( newVacationModeModel, action ) =
+                    VacationMode.Update.update msg model.vacationModeModel
+            in
+                ( { model | vacationModeModel = newVacationModeModel }, Cmd.map VacationModeMsg action )
 
         -- Boilerplate: Mdl action handler.
         Mdl msg_ ->
@@ -215,7 +218,6 @@ get decoder msg url =
             Http.get url decoder
     in
         Http.send msg request
-
 
 
 getLiveState : Cmd Msg
@@ -451,6 +453,7 @@ loginCard model =
                 ]
             ]
         ]
+
 
 subscriptions : Model -> Sub Msg
 subscriptions model =

@@ -7,12 +7,13 @@ import Material.Card as Card
 import Material.List as MatList
 import Material.Typography as Typo
 import Material.Options as Options exposing (css)
-
 import Programmes.Model exposing (ProgrammesModel, Programme)
 import Programmes.Update exposing (Msg(Mdl))
 
+
 type alias Mdl =
     Material.Model
+
 
 view : Material.Model -> ProgrammesModel -> Html Msg
 view mdl programmesModel =
@@ -25,6 +26,7 @@ view mdl programmesModel =
                 (List.map (\programme -> programmeEntry programme mdl programmesModel.currentProgramme programmesModel.pendingProgramme) programmesModel.availableProgrammes)
             ]
         ]
+
 
 programmeEntry : Programme -> Material.Model -> Maybe String -> Maybe String -> Html Msg
 programmeEntry programme mdl currentProgramme pendingProgramme =
@@ -58,6 +60,7 @@ programmeEntry programme mdl currentProgramme pendingProgramme =
                     [ text programme.name ]
                 ]
             ]
+
 
 compactListItem : List (Options.Property c m) -> List (Html m) -> Html m
 compactListItem listStyles =

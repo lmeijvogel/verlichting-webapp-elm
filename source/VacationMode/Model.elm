@@ -5,8 +5,8 @@ module VacationMode.Model
         )
 
 import Material
-
 import TimeOfDay exposing (TimeOfDay)
+
 
 type alias VacationModeModel =
     { state : Bool

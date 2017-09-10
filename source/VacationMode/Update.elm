@@ -3,10 +3,10 @@ module VacationMode.Update exposing (load, update, Msg(..))
 import Http
 import Json.Encode
 import Material
-
 import JsonDecoders
 import VacationMode.Model exposing (VacationModeModel)
 import TimeOfDay exposing (..)
+
 
 type Msg
     = Enable
@@ -59,6 +59,7 @@ update msg vacationMode =
 
         Received (Err error) ->
             ( { vacationMode | error = toString error }, Cmd.none )
+
         Mdl msg_ ->
             Material.update Mdl msg_ vacationMode
 
@@ -88,6 +89,7 @@ sendNewVacationModeState vacationMode =
     in
         Http.send Received request
 
+
 load : Cmd Msg
 load =
     let
@@ -98,5 +100,3 @@ load =
             Http.get url JsonDecoders.vacationMode
     in
         Http.send Received request
-
-

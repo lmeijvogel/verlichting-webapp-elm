@@ -4,6 +4,7 @@ import Http
 import Lights.Model exposing (..)
 import Material
 
+
 type Msg
     = Received (Result Http.Error (List Light))
     | ShowLight (Maybe Light)
@@ -25,7 +26,7 @@ load =
         Http.send Received request
 
 
-update : Msg -> LightsModel -> (LightsModel, Cmd Msg )
+update : Msg -> LightsModel -> ( LightsModel, Cmd Msg )
 update msg lightsModel =
     case msg of
         Received (Ok newLights) ->
@@ -54,7 +55,9 @@ update msg lightsModel =
                         (save newLight)
                     else
                         Cmd.none
-                newLights = (List.map
+
+                newLights =
+                    (List.map
                         (\l ->
                             if l.id == light.id then
                                 newLight
@@ -63,7 +66,6 @@ update msg lightsModel =
                         )
                         lightsModel.lights
                     )
-
             in
                 ( { lightsModel | lights = newLights }, nextCommand )
 
@@ -78,6 +80,7 @@ update msg lightsModel =
 
         Mdl msg_ ->
             Material.update Mdl msg_ lightsModel
+
 
 save : Light -> Cmd Msg
 save light =
@@ -106,6 +109,3 @@ save light =
 newIntensityRequested : Light -> Float -> Msg
 newIntensityRequested light level =
     Update light (Level (round level)) False
-
-
-

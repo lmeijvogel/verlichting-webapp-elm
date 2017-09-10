@@ -3,6 +3,7 @@ module Lights.Model exposing (..)
 import Json.Decode exposing (..)
 import Material
 
+
 type alias Light =
     { id : Int
     , name : String
@@ -10,21 +11,23 @@ type alias Light =
     , value : LightValue
     }
 
+
 type alias LightsModel =
-  {
-    lights: List Light
-  , editingLightId: Maybe Int
-  , error : Maybe String
-  , mdl : Material.Model
-  }
+    { lights : List Light
+    , editingLightId : Maybe Int
+    , error : Maybe String
+    , mdl : Material.Model
+    }
+
 
 newLightsModel : LightsModel
-newLightsModel = {
-    lights = []
-  , editingLightId = Nothing
-  , error = Nothing
-  , mdl = Material.model
-  }
+newLightsModel =
+    { lights = []
+    , editingLightId = Nothing
+    , error = Nothing
+    , mdl = Material.model
+    }
+
 
 type LightValue
     = Level Int

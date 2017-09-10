@@ -1,7 +1,6 @@
 module Lights.View exposing (..)
 
 import Html exposing (Html, ul, li, div, span, p, text, button, label, input)
-
 import Material
 import Material.Button as Button
 import Material.Card as Card
@@ -12,9 +11,9 @@ import Material.Options as Options exposing (css)
 import Material.Slider as Slider
 import Material.Toggles as Toggles
 import Material.Typography as Typo
-
 import Lights.Model exposing (..)
 import Lights.Update exposing (..)
+
 
 view : Material.Model -> LightsModel -> Html Msg
 view mdl model =
@@ -84,6 +83,7 @@ singleLightCard light model =
             ]
         ]
 
+
 lightEntry : Light -> Html Msg
 lightEntry light =
     let
@@ -143,6 +143,7 @@ lightEntry light =
                     ]
                 ]
             ]
+
 
 compactListItem : List (Options.Property c m) -> List (Html m) -> Html m
 compactListItem listStyles =

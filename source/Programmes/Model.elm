@@ -2,11 +2,12 @@ module Programmes.Model exposing (..)
 
 import Material
 
+
 type alias ProgrammesModel =
     { availableProgrammes : List Programme
     , currentProgramme : Maybe String
     , pendingProgramme : Maybe String
-    , error: Maybe String
+    , error : Maybe String
     , mdl : Material.Model
     }
 
@@ -19,6 +20,7 @@ newProgrammesModel =
     , error = Nothing
     , mdl = Material.model
     }
+
 
 type alias Programme =
     { id : String
