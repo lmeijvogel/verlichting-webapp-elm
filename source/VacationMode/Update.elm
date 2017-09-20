@@ -4,7 +4,7 @@ import Http
 import Json.Encode
 import Material
 import JsonDecoders
-import VacationMode.Model exposing (VacationModeModel, State(..))
+import VacationMode.Model exposing (..)
 import TimeOfDay exposing (..)
 
 
@@ -71,7 +71,7 @@ update msg vacationMode =
             Material.update Mdl msg_ vacationMode
 
 
-sendNewVacationModeState : VacationMode.Model.State -> VacationMode.Model.State -> Cmd Msg
+sendNewVacationModeState : State -> State -> Cmd Msg
 sendNewVacationModeState state oldState =
     let
         stateJson =
