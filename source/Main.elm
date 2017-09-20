@@ -293,10 +293,12 @@ view model =
                     Color.BlueGrey
 
         scheduleIcon =
-            if model.vacationModeModel.state then
-                [ Icon.i "schedule" ]
-            else
-                []
+            case model.vacationModeModel.state of
+                VacationMode.Model.Enabled _ _ ->
+                    [ Icon.i "schedule" ]
+
+                _ ->
+                    []
 
         syncDisabledIcon =
             if model.liveState == LiveState.Live then

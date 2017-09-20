@@ -22,7 +22,12 @@ view : Material.Model -> VacationModeModel -> Html Msg
 view mdl vacationModeModel =
     let
         on =
-            vacationModeModel.state
+            case vacationModeModel.state of
+                Enabled _ _ ->
+                    True
+
+                _ ->
+                    False
 
         buttonText =
             if on then
@@ -40,10 +45,15 @@ view mdl vacationModeModel =
             [ Card.title []
                 [ let
                     titleText =
-                        if on then
-                            "Vacation mode is ON"
-                        else
-                            "Vacation mode is OFF"
+                        case vacationModeModel.state of
+                            Enabled _ _ ->
+                                "Vacation mode is ON"
+
+                            Disabled ->
+                                "Vacation mode is OFF"
+
+                            Unknown ->
+                                "Vacation mode (state unknown)"
                   in
                     Options.styled p [ Typo.title ] [ text titleText ]
                 ]
@@ -55,11 +65,11 @@ view mdl vacationModeModel =
                             ]
                         , MatList.content2 []
                             [ if on then
-                                text (timeOfDayToString vacationModeModel.averageStartTime)
+                                text (timeOfDayToString vacationModeModel.nextStartTime)
                               else
                                 input
                                     [ type_ "time"
-                                    , value (timeOfDayToString vacationModeModel.averageStartTime)
+                                    , value (timeOfDayToString vacationModeModel.nextStartTime)
                                     , onInput (\s -> VacationMode.Update.StartTimeChanged s)
                                     ]
                                     []
@@ -71,11 +81,11 @@ view mdl vacationModeModel =
                             ]
                         , MatList.content2 []
                             [ if on then
-                                text (timeOfDayToString vacationModeModel.averageEndTime)
+                                text (timeOfDayToString vacationModeModel.nextEndTime)
                               else
                                 input
                                     [ type_ "time"
-                                    , value (timeOfDayToString vacationModeModel.averageEndTime)
+                                    , value (timeOfDayToString vacationModeModel.nextEndTime)
                                     , onInput (\s -> VacationMode.Update.EndTimeChanged s)
                                     ]
                                     []

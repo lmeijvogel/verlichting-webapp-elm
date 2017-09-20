@@ -54,26 +54,29 @@ activationResponse =
         field "success" bool |> Decode.andThen decodeResult
 
 
-vacationMode : Decoder VacationModeResult
-vacationMode =
+vacationMode : TimeOfDay -> TimeOfDay -> Decoder VacationModeResult
+vacationMode defaultStart defaultEnd =
     let
-        convert : String -> Decoder TimeOfDay
-        convert input =
+        convert : TimeOfDay -> Maybe String -> Decoder TimeOfDay
+        convert default input =
             let
+                defaultTimeString =
+                    TimeOfDay.timeOfDayToString default
+
                 timeOfDayResult =
-                    TimeOfDay.timeOfDayFromString input
+                    TimeOfDay.timeOfDayFromString (Maybe.withDefault defaultTimeString input)
             in
                 case timeOfDayResult of
                     Ok timeOfDay ->
                         Decode.succeed timeOfDay
 
                     _ ->
-                        Decode.fail input
+                        Decode.fail ("Invalid input value" ++ (toString input) ++ "'")
     in
         map3 VacationModeResult
             (field "state" string)
-            ((field "start_time" string) |> Decode.andThen convert)
-            ((field "end_time" string) |> Decode.andThen convert)
+            ((maybe (field "start_time" string)) |> Decode.andThen (convert defaultStart))
+            ((maybe (field "end_time" string)) |> Decode.andThen (convert defaultEnd))
 
 
 liveState : Decoder LiveState

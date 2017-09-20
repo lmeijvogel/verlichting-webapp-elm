@@ -4,7 +4,7 @@ import Http
 import Json.Encode
 import Material
 import JsonDecoders
-import VacationMode.Model exposing (VacationModeModel)
+import VacationMode.Model exposing (VacationModeModel, State(..))
 import TimeOfDay exposing (..)
 
 
@@ -27,21 +27,21 @@ update msg vacationMode =
         Enable ->
             let
                 newVacationMode =
-                    { vacationMode | state = True }
+                    { vacationMode | state = Enabled vacationMode.nextStartTime vacationMode.nextEndTime }
             in
-                ( vacationMode, sendNewVacationModeState newVacationMode )
+                ( vacationMode, sendNewVacationModeState newVacationMode vacationMode.state )
 
         Disable ->
             let
                 newVacationMode =
-                    { vacationMode | state = False }
+                    { vacationMode | state = Disabled }
             in
-                ( vacationMode, sendNewVacationModeState newVacationMode )
+                ( vacationMode, sendNewVacationModeState newVacationMode vacationMode.state )
 
         StartTimeChanged startTimeString ->
             case timeOfDayFromString startTimeString of
                 Ok time ->
-                    ( { vacationMode | averageStartTime = time }, Cmd.none )
+                    ( { vacationMode | nextStartTime = time }, Cmd.none )
 
                 Err string ->
                     ( { vacationMode | error = "Invalid start time: " ++ string }, Cmd.none )
@@ -49,13 +49,20 @@ update msg vacationMode =
         EndTimeChanged endTimeString ->
             case timeOfDayFromString endTimeString of
                 Ok time ->
-                    ( { vacationMode | averageEndTime = time }, Cmd.none )
+                    ( { vacationMode | nextEndTime = time }, Cmd.none )
 
                 Err string ->
                     ( { vacationMode | error = "Invalid end time: " ++ string }, Cmd.none )
 
         Received (Ok vacationModeResult) ->
-            ( { vacationMode | state = vacationModeResult.state == "on", averageStartTime = vacationModeResult.start_time, averageEndTime = vacationModeResult.end_time }, Cmd.none )
+            let
+                newState =
+                    if vacationModeResult.state == "on" then
+                        Enabled vacationModeResult.start_time vacationModeResult.end_time
+                    else
+                        Disabled
+            in
+                ( { vacationMode | state = newState, nextStartTime = vacationModeResult.start_time, nextEndTime = vacationModeResult.end_time }, Cmd.none )
 
         Received (Err error) ->
             ( { vacationMode | error = toString error }, Cmd.none )
@@ -64,28 +71,55 @@ update msg vacationMode =
             Material.update Mdl msg_ vacationMode
 
 
-sendNewVacationModeState : VacationModeModel -> Cmd Msg
-sendNewVacationModeState vacationMode =
+sendNewVacationModeState : VacationModeModel -> VacationMode.Model.State -> Cmd Msg
+sendNewVacationModeState vacationMode oldState =
     let
         stateJson =
-            if vacationMode.state then
-                "on"
-            else
-                "off"
+            case vacationMode.state of
+                Enabled _ _ ->
+                    "on"
+
+                Disabled ->
+                    "off"
+
+                Unknown ->
+                    "off"
+
+        disabledRequestData =
+            [ ( "state", Json.Encode.string stateJson ) ]
 
         requestData =
-            [ ( "start_time", Json.Encode.string <| timeOfDayToString vacationMode.averageStartTime )
-            , ( "end_time", Json.Encode.string <| timeOfDayToString vacationMode.averageEndTime )
-            , ( "state", Json.Encode.string stateJson )
-            ]
+            case vacationMode.state of
+                Enabled startTime endTime ->
+                    [ ( "start_time", Json.Encode.string <| timeOfDayToString startTime )
+                    , ( "end_time", Json.Encode.string <| timeOfDayToString endTime )
+                    , ( "state", Json.Encode.string stateJson )
+                    ]
+
+                Disabled ->
+                    disabledRequestData
+
+                Unknown ->
+                    disabledRequestData
+
+        requestJson =
+            requestData
                 |> Json.Encode.object
                 |> Http.jsonBody
 
         url =
             "/my_zwave/vacation_mode"
 
+        ( defaultStartTime, defaultEndTime ) =
+            case oldState of
+                Enabled start end ->
+                    ( start, end )
+
+                _ ->
+                    ( TimeOfDay 18 30, TimeOfDay 22 30 )
+
         request =
-            Http.post url requestData JsonDecoders.vacationMode
+            Http.post url requestJson (JsonDecoders.vacationMode defaultStartTime defaultEndTime)
     in
         Http.send Received request
 
@@ -97,6 +131,6 @@ load =
             "/my_zwave/vacation_mode"
 
         request =
-            Http.get url JsonDecoders.vacationMode
+            Http.get url (JsonDecoders.vacationMode (TimeOfDay 18 30) (TimeOfDay 22 30))
     in
         Http.send Received request
