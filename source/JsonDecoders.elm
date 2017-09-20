@@ -1,4 +1,4 @@
-module JsonDecoders exposing (availableProgrammes, currentProgramme, activationResponse, vacationMode, liveState, mainSwitchState, PostProgrammeResult(..), VacationModeResult)
+module JsonDecoders exposing (availableProgrammes, currentProgramme, activationResponse, liveState, mainSwitchState, PostProgrammeResult(..))
 
 import Json.Decode as Decode
 import Json.Decode exposing (..)
@@ -11,13 +11,6 @@ import TimeOfDay exposing (TimeOfDay)
 type PostProgrammeResult
     = Success String
     | Error
-
-
-type alias VacationModeResult =
-    { state : String
-    , start_time : TimeOfDay
-    , end_time : TimeOfDay
-    }
 
 
 availableProgrammes : Decoder (List Programme)
@@ -52,31 +45,6 @@ activationResponse =
                 Decode.succeed Error
     in
         field "success" bool |> Decode.andThen decodeResult
-
-
-vacationMode : TimeOfDay -> TimeOfDay -> Decoder VacationModeResult
-vacationMode defaultStart defaultEnd =
-    let
-        convert : TimeOfDay -> Maybe String -> Decoder TimeOfDay
-        convert default input =
-            let
-                defaultTimeString =
-                    TimeOfDay.timeOfDayToString default
-
-                timeOfDayResult =
-                    TimeOfDay.timeOfDayFromString (Maybe.withDefault defaultTimeString input)
-            in
-                case timeOfDayResult of
-                    Ok timeOfDay ->
-                        Decode.succeed timeOfDay
-
-                    _ ->
-                        Decode.fail ("Invalid input value" ++ (toString input) ++ "'")
-    in
-        map3 VacationModeResult
-            (field "state" string)
-            ((maybe (field "start_time" string)) |> Decode.andThen (convert defaultStart))
-            ((maybe (field "end_time" string)) |> Decode.andThen (convert defaultEnd))
 
 
 liveState : Decoder LiveState

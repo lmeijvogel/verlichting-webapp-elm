@@ -2,16 +2,24 @@ module VacationMode.Update exposing (load, update, Msg(..))
 
 import Http
 import Json.Encode
+import Json.Decode exposing (..)
+import Json.Decode as Decode
 import Material
-import JsonDecoders
 import VacationMode.Model exposing (..)
 import TimeOfDay exposing (..)
+
+
+type alias VacationModeResult =
+    { state : String
+    , start_time : TimeOfDay
+    , end_time : TimeOfDay
+    }
 
 
 type Msg
     = Enable
     | Disable
-    | Received (Result Http.Error JsonDecoders.VacationModeResult)
+    | Received (Result Http.Error VacationModeResult)
     | StartTimeChanged String
     | EndTimeChanged String
     | Mdl (Material.Msg Msg)
@@ -119,7 +127,7 @@ sendNewVacationModeState state oldState =
                     ( TimeOfDay 18 30, TimeOfDay 22 30 )
 
         request =
-            Http.post url requestJson (JsonDecoders.vacationMode defaultStartTime defaultEndTime)
+            Http.post url requestJson (decodeVacationMode defaultStartTime defaultEndTime)
     in
         Http.send Received request
 
@@ -131,6 +139,30 @@ load =
             "/my_zwave/vacation_mode"
 
         request =
-            Http.get url (JsonDecoders.vacationMode (TimeOfDay 18 30) (TimeOfDay 22 30))
+            Http.get url (decodeVacationMode (TimeOfDay 18 30) (TimeOfDay 22 30))
     in
         Http.send Received request
+
+decodeVacationMode : TimeOfDay -> TimeOfDay -> Decoder VacationModeResult
+decodeVacationMode defaultStart defaultEnd =
+    let
+        convert : TimeOfDay -> Maybe String -> Decoder TimeOfDay
+        convert default input =
+            let
+                defaultTimeString =
+                    TimeOfDay.timeOfDayToString default
+
+                timeOfDayResult =
+                    TimeOfDay.timeOfDayFromString (Maybe.withDefault defaultTimeString input)
+            in
+                case timeOfDayResult of
+                    Ok timeOfDay ->
+                        succeed timeOfDay
+
+                    _ ->
+                        fail ("Invalid input value" ++ (toString input) ++ "'")
+    in
+        map3 VacationModeResult
+            (field "state" string)
+            ((maybe (field "start_time" string)) |> andThen (convert defaultStart))
+            ((maybe (field "end_time" string)) |> andThen (convert defaultEnd))
