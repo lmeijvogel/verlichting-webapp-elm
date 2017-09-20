@@ -29,14 +29,14 @@ update msg vacationMode =
                 newVacationMode =
                     { vacationMode | state = Enabled vacationMode.nextStartTime vacationMode.nextEndTime }
             in
-                ( vacationMode, sendNewVacationModeState newVacationMode vacationMode.state )
+                ( vacationMode, sendNewVacationModeState newVacationMode.state vacationMode.state )
 
         Disable ->
             let
                 newVacationMode =
                     { vacationMode | state = Disabled }
             in
-                ( vacationMode, sendNewVacationModeState newVacationMode vacationMode.state )
+                ( vacationMode, sendNewVacationModeState newVacationMode.state vacationMode.state )
 
         StartTimeChanged startTimeString ->
             case timeOfDayFromString startTimeString of
@@ -71,11 +71,11 @@ update msg vacationMode =
             Material.update Mdl msg_ vacationMode
 
 
-sendNewVacationModeState : VacationModeModel -> VacationMode.Model.State -> Cmd Msg
-sendNewVacationModeState vacationMode oldState =
+sendNewVacationModeState : VacationMode.Model.State -> VacationMode.Model.State -> Cmd Msg
+sendNewVacationModeState state oldState =
     let
         stateJson =
-            case vacationMode.state of
+            case state of
                 Enabled _ _ ->
                     "on"
 
@@ -89,7 +89,7 @@ sendNewVacationModeState vacationMode oldState =
             [ ( "state", Json.Encode.string stateJson ) ]
 
         requestData =
-            case vacationMode.state of
+            case state of
                 Enabled startTime endTime ->
                     [ ( "start_time", Json.Encode.string <| timeOfDayToString startTime )
                     , ( "end_time", Json.Encode.string <| timeOfDayToString endTime )
