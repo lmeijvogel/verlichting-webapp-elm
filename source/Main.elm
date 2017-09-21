@@ -28,7 +28,8 @@ import Lights.Update exposing (..)
 import Lights.View exposing (..)
 import Login
 import LiveState exposing (LiveState)
-import MainSwitchState exposing (MainSwitchState)
+import MainSwitchState.Model exposing (MainSwitchState, MainSwitchModel)
+import MainSwitchState.Update
 import VacationMode.Model exposing (VacationModeModel)
 import VacationMode.Update
 import VacationMode.View
@@ -62,7 +63,7 @@ type alias Model =
     , lightsModel : LightsModel
     , editingLightId : Maybe Int
     , vacationModeModel : VacationModeModel
-    , mainSwitchState : MainSwitchState
+    , mainSwitchState : MainSwitchModel
     , error : String
     , loginFormData : LoginFormData
     , mdl : Material.Model
@@ -78,7 +79,7 @@ init =
       , lightsModel = newLightsModel
       , editingLightId = Nothing
       , vacationModeModel = VacationMode.Model.new
-      , mainSwitchState = MainSwitchState.Unknown
+      , mainSwitchState = MainSwitchState.Model.new
       , error = ""
       , loginFormData = newLoginFormData
       , snackbar = Snackbar.model
@@ -102,8 +103,7 @@ type Msg
     | LightMsg Lights.Update.Msg
     | LiveStateClicked LiveState
     | LiveStateReceived (Result Http.Error LiveState)
-    | MainSwitchStateClicked MainSwitchState
-    | MainSwitchStateReceived (Result Http.Error MainSwitchState)
+    | MainSwitchStateMsg MainSwitchState.Update.Msg
     | HealNetwork
     | HealNetworkRequestSent (Result Http.Error String)
     | Snackbar (Snackbar.Msg Msg)
@@ -136,15 +136,6 @@ update msg model =
 
         LiveStateReceived (Err _) ->
             ( { model | liveState = LiveState.Error }, Cmd.none )
-
-        MainSwitchStateClicked mainSwitchState ->
-            ( model, setMainSwitchState mainSwitchState )
-
-        MainSwitchStateReceived (Ok mainSwitchState) ->
-            ( { model | mainSwitchState = mainSwitchState }, Cmd.none )
-
-        MainSwitchStateReceived (Err _) ->
-            ( { model | mainSwitchState = MainSwitchState.Error }, Cmd.none )
 
         UsernameChanged username ->
             let
@@ -180,6 +171,12 @@ update msg model =
             in
                 ( { model | loginState = newLoginState, loginFormData = nextLoginFormData }, nextCommand )
 
+        MainSwitchStateMsg msg ->
+          let
+              (newMainSwitchState, action) =
+                  MainSwitchState.Update.update model.mainSwitchState msg
+          in
+              ( { model | mainSwitchState = newMainSwitchState }, Cmd.map MainSwitchStateMsg action )
         SubmitLogin ->
             let
                 { username, password } =
@@ -218,7 +215,7 @@ initialize =
     Cmd.batch
         [ Cmd.map ProgrammeMsg Programmes.Update.load
         , getLiveState
-        , getMainSwitchState
+        , Cmd.map MainSwitchStateMsg MainSwitchState.Update.load
         , Cmd.map LightMsg Lights.Update.load
         , Cmd.map VacationModeMsg VacationMode.Update.load
         ]
@@ -310,31 +307,6 @@ showNetworkRequestSent model result =
         ( model_, Cmd.batch [ effect ] )
 
 
-getMainSwitchState : Cmd Msg
-getMainSwitchState =
-    get JsonDecoders.mainSwitchState MainSwitchStateReceived "/my_zwave/main_switch"
-
-
-setMainSwitchState : MainSwitchState -> Cmd Msg
-setMainSwitchState newState =
-    let
-        stateString =
-            case newState of
-                MainSwitchState.Disabled ->
-                    "false"
-
-                _ ->
-                    "true"
-
-        url =
-            "/my_zwave/main_switch/" ++ stateString
-
-        request =
-            Http.post url Http.emptyBody JsonDecoders.mainSwitchState
-    in
-        Http.send MainSwitchStateReceived request
-
-
 
 -- VIEW
 
@@ -372,7 +344,7 @@ view model =
                 [ Icon.i "sync_disabled" ]
 
         indeterminateCheckboxIcon =
-            if model.mainSwitchState == MainSwitchState.Enabled then
+            if model.mainSwitchState.state == MainSwitchState.Model.Enabled then
                 []
             else
                 [ Icon.i "indeterminate_check_box" ]
@@ -448,10 +420,11 @@ drawer model =
                 LiveState.Live
 
         newMainSwitchState =
-            if model.mainSwitchState == MainSwitchState.Enabled then
-                MainSwitchState.Disabled
-            else
-                MainSwitchState.Enabled
+          if model.mainSwitchState.state == MainSwitchState.Model.Enabled then
+            MainSwitchState.Model.Disabled
+          else
+            MainSwitchState.Model.Enabled
+
     in
         div []
             [ MatList.ul []
@@ -473,11 +446,11 @@ drawer model =
                         [ Toggles.checkbox Mdl
                             [ 1 ]
                             model.mdl
-                            [ Toggles.value (model.mainSwitchState == MainSwitchState.Enabled)
-                            , Options.onToggle (MainSwitchStateClicked newMainSwitchState)
+                            [ Toggles.value (model.mainSwitchState.state == MainSwitchState.Model.Enabled)
+                            , Options.onToggle (MainSwitchStateMsg (MainSwitchState.Update.MainSwitchStateClicked newMainSwitchState))
                             ]
                             [ text "Main switch enabled" ]
-                        ]
+                          ]
                     ]
                 , MatList.li []
                     [ MatList.content

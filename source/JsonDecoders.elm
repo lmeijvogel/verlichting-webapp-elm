@@ -4,7 +4,7 @@ import Json.Decode as Decode
 import Json.Decode exposing (..)
 import Programmes.Model exposing (Programme)
 import LiveState exposing (LiveState)
-import MainSwitchState exposing (MainSwitchState)
+import MainSwitchState.Model exposing (MainSwitchState)
 
 
 type PostProgrammeResult
@@ -77,9 +77,9 @@ mainSwitchState =
             let
                 newState =
                     if state then
-                        MainSwitchState.Enabled
+                        MainSwitchState.Model.Enabled
                     else
-                        MainSwitchState.Disabled
+                        MainSwitchState.Model.Disabled
             in
                 Decode.succeed newState
     in
