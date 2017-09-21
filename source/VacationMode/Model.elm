@@ -6,7 +6,7 @@ module VacationMode.Model
         )
 
 import Material
-import TimeOfDay exposing (TimeOfDay)
+import VacationMode.TimeOfDay exposing (TimeOfDay)
 
 
 type State

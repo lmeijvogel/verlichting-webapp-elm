@@ -6,7 +6,7 @@ import Json.Decode exposing (..)
 import Json.Decode as Decode
 import Material
 import VacationMode.Model exposing (..)
-import TimeOfDay exposing (..)
+import VacationMode.TimeOfDay exposing (..)
 
 
 type alias VacationModeResult =
@@ -151,10 +151,10 @@ decodeVacationMode defaultStart defaultEnd =
         convert default input =
             let
                 defaultTimeString =
-                    TimeOfDay.timeOfDayToString default
+                    timeOfDayToString default
 
                 timeOfDayResult =
-                    TimeOfDay.timeOfDayFromString (Maybe.withDefault defaultTimeString input)
+                    timeOfDayFromString (Maybe.withDefault defaultTimeString input)
             in
                 case timeOfDayResult of
                     Ok timeOfDay ->

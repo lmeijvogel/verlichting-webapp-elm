@@ -9,8 +9,8 @@ import Material.Card as Card
 import Material.List as MatList
 import Material.Options as Options exposing (css)
 import Material.Typography as Typo
-import TimeOfDay exposing (..)
 import VacationMode.Model exposing (..)
+import VacationMode.TimeOfDay exposing (..)
 import VacationMode.Update exposing (Msg)
 
 

@@ -1,4 +1,4 @@
-module TimeOfDay exposing (TimeOfDay, timeOfDayFromString, timeOfDayToString)
+module VacationMode.TimeOfDay exposing (TimeOfDay, timeOfDayFromString, timeOfDayToString)
 
 
 type alias TimeOfDay =
