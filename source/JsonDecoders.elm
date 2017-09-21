@@ -5,7 +5,6 @@ import Json.Decode exposing (..)
 import Programmes.Model exposing (Programme)
 import LiveState exposing (LiveState)
 import MainSwitchState exposing (MainSwitchState)
-import TimeOfDay exposing (TimeOfDay)
 
 
 type PostProgrammeResult

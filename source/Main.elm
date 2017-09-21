@@ -29,7 +29,7 @@ import Lights.View exposing (..)
 import Login
 import LiveState exposing (LiveState)
 import MainSwitchState exposing (MainSwitchState)
-import VacationMode.Model exposing (..)
+import VacationMode.Model exposing (VacationModeModel)
 import VacationMode.Update
 import VacationMode.View
 import JsonDecoders
