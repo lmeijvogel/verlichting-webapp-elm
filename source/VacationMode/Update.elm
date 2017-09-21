@@ -143,6 +143,7 @@ load =
     in
         Http.send Received request
 
+
 decodeVacationMode : TimeOfDay -> TimeOfDay -> Decoder VacationModeResult
 decodeVacationMode defaultStart defaultEnd =
     let

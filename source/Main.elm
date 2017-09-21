@@ -8,12 +8,14 @@ import Material.Button as Button
 import Material.Card as Card
 import Material.Color as Color
 import Material.Grid as Grid
+import Material.Helpers exposing (map1st, map2nd)
 import Material.Icon as Icon
 import Material.Layout as Layout
 import Material.List as MatList
 import Material.Spinner as Spinner
 import Material.Options as Options exposing (css)
 import Material.Scheme as Scheme
+import Material.Snackbar as Snackbar
 import Material.Textfield as Textfield
 import Material.Toggles as Toggles
 import Material.Typography as Typo
@@ -64,6 +66,7 @@ type alias Model =
     , error : String
     , loginFormData : LoginFormData
     , mdl : Material.Model
+    , snackbar : Snackbar.Model Msg
     }
 
 
@@ -78,6 +81,7 @@ init =
       , mainSwitchState = MainSwitchState.Unknown
       , error = ""
       , loginFormData = newLoginFormData
+      , snackbar = Snackbar.model
       , mdl = Material.model
       }
     , Cmd.map LoginMsg Login.checkLoggedIn
@@ -100,6 +104,10 @@ type Msg
     | LiveStateReceived (Result Http.Error LiveState)
     | MainSwitchStateClicked MainSwitchState
     | MainSwitchStateReceived (Result Http.Error MainSwitchState)
+    | HealNetwork
+    | HealNetworkRequestSent (Result Http.Error String)
+    | Snackbar (Snackbar.Msg Msg)
+    | SnackbarClicked
     | Mdl (Material.Msg Msg)
 
 
@@ -186,7 +194,21 @@ update msg model =
             in
                 ( { model | vacationModeModel = newVacationModeModel }, Cmd.map VacationModeMsg action )
 
+        HealNetwork ->
+            ( model, healNetwork )
+
+        HealNetworkRequestSent result ->
+            showNetworkRequestSent model result
+
         -- Boilerplate: Mdl action handler.
+        Snackbar msg_ ->
+            Snackbar.update msg_ model.snackbar
+                |> map1st (\s -> { model | snackbar = s })
+                |> map2nd (Cmd.map Snackbar)
+
+        SnackbarClicked ->
+            ( model, Cmd.none )
+
         Mdl msg_ ->
             Material.update Mdl msg_ model
 
@@ -243,6 +265,49 @@ setLiveState newState =
             Http.post url Http.emptyBody JsonDecoders.liveState
     in
         Http.send LiveStateReceived request
+
+
+healNetwork : Cmd Msg
+healNetwork =
+    let
+        url =
+            "/my_zwave/heal_network"
+
+        request =
+            Http.post url Http.emptyBody JsonDecoders.healNetwork
+    in
+        Http.send HealNetworkRequestSent request
+
+
+showNetworkRequestSent : Model -> Result Http.Error String -> ( Model, Cmd Msg )
+showNetworkRequestSent model result =
+    let
+        message : String
+        message =
+            case result of
+                Ok msg ->
+                    msg
+
+                Err msg ->
+                    "Error: " ++ (toString msg)
+
+        snackContents : Snackbar.Contents Msg
+        snackContents =
+            { message = message
+            , action = Nothing
+            , payload = SnackbarClicked
+            , timeout = 4000
+            , fade = 1000
+            }
+
+        ( snackbar_, effect ) =
+            Snackbar.add snackContents model.snackbar
+                |> map2nd (Cmd.map Snackbar)
+
+        model_ =
+            { model | snackbar = snackbar_ }
+    in
+        ( model_, Cmd.batch [ effect ] )
 
 
 getMainSwitchState : Cmd Msg
@@ -366,6 +431,7 @@ view model =
 
                     Login.NotLoggedIn ->
                         loginCard model
+                , Snackbar.view model.snackbar |> Html.map Snackbar
                 ]
             }
         )
@@ -411,6 +477,18 @@ drawer model =
                             , Options.onToggle (MainSwitchStateClicked newMainSwitchState)
                             ]
                             [ text "Main switch enabled" ]
+                        ]
+                    ]
+                , MatList.li []
+                    [ MatList.content
+                        []
+                        [ Button.render Mdl
+                            [ 2 ]
+                            model.mdl
+                            [ Button.raised
+                            , Options.onClick HealNetwork
+                            ]
+                            [ text "Heal network" ]
                         ]
                     ]
                 ]

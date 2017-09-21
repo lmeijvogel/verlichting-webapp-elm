@@ -1,4 +1,4 @@
-module JsonDecoders exposing (availableProgrammes, currentProgramme, activationResponse, liveState, mainSwitchState, PostProgrammeResult(..))
+module JsonDecoders exposing (availableProgrammes, currentProgramme, activationResponse, liveState, mainSwitchState, PostProgrammeResult(..), healNetwork)
 
 import Json.Decode as Decode
 import Json.Decode exposing (..)
@@ -32,6 +32,11 @@ availableProgrammes =
 currentProgramme : Decoder String
 currentProgramme =
     field "programme" string
+
+
+healNetwork : Decoder String
+healNetwork =
+    field "state" string
 
 
 activationResponse : Decoder PostProgrammeResult
