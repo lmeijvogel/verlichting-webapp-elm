@@ -2,17 +2,18 @@ module MainSwitchState.Update exposing (load, update, Msg(..))
 
 import Http
 import Json.Decode exposing (Decoder)
-
 import JsonDecoders
 import MainSwitchState.Model exposing (MainSwitchState, MainSwitchModel)
 import Material
+
 
 type Msg
     = MainSwitchStateClicked MainSwitchState
     | MainSwitchStateReceived (Result Http.Error MainSwitchState)
     | Mdl (Material.Msg Msg)
 
-update : MainSwitchModel -> Msg -> (MainSwitchModel, Cmd Msg)
+
+update : MainSwitchModel -> Msg -> ( MainSwitchModel, Cmd Msg )
 update model msg =
     case msg of
         MainSwitchStateClicked state ->
@@ -27,6 +28,7 @@ update model msg =
         Mdl msg_ ->
             Material.update Mdl msg_ model
 
+
 get : Decoder a -> (Result Http.Error a -> Msg) -> String -> Cmd Msg
 get decoder msg url =
     let
@@ -34,6 +36,7 @@ get decoder msg url =
             Http.get url decoder
     in
         Http.send msg request
+
 
 load : Cmd Msg
 load =
@@ -58,4 +61,3 @@ setMainSwitchState newState =
             Http.post url Http.emptyBody JsonDecoders.mainSwitchState
     in
         Http.send MainSwitchStateReceived request
-

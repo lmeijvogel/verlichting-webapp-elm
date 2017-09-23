@@ -168,11 +168,12 @@ update msg model =
                 ( { model | loginState = newLoginState, loginFormData = nextLoginFormData }, nextCommand )
 
         MainSwitchStateMsg msg ->
-          let
-              (newMainSwitchState, action) =
-                  MainSwitchState.Update.update model.mainSwitchState msg
-          in
-              ( { model | mainSwitchState = newMainSwitchState }, Cmd.map MainSwitchStateMsg action )
+            let
+                ( newMainSwitchState, action ) =
+                    MainSwitchState.Update.update model.mainSwitchState msg
+            in
+                ( { model | mainSwitchState = newMainSwitchState }, Cmd.map MainSwitchStateMsg action )
+
         SubmitLogin ->
             let
                 { username, password } =
@@ -416,11 +417,10 @@ drawer model =
                 LiveState.Live
 
         newMainSwitchState =
-          if model.mainSwitchState.state == MainSwitchState.Model.Enabled then
-            MainSwitchState.Model.Disabled
-          else
-            MainSwitchState.Model.Enabled
-
+            if model.mainSwitchState.state == MainSwitchState.Model.Enabled then
+                MainSwitchState.Model.Disabled
+            else
+                MainSwitchState.Model.Enabled
     in
         div []
             [ MatList.ul []
@@ -446,7 +446,7 @@ drawer model =
                             , Options.onToggle (MainSwitchStateMsg (MainSwitchState.Update.MainSwitchStateClicked newMainSwitchState))
                             ]
                             [ text "Main switch enabled" ]
-                          ]
+                        ]
                     ]
                 , MatList.li []
                     [ MatList.content

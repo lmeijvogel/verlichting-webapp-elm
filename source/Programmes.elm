@@ -2,16 +2,15 @@ module Programmes exposing (Model, Msg(..), new, load, update, view)
 
 import Html exposing (Html, ul, li, div, span, p, text, button, label, input)
 import Http
-
 import Json.Decode as Decode
 import Json.Decode exposing (..)
-
 import Material
 import Material.Button as Button
 import Material.Card as Card
 import Material.List as MatList
 import Material.Typography as Typo
 import Material.Options as Options exposing (css)
+
 
 -- MODEL --
 
@@ -40,11 +39,15 @@ type alias Programme =
     , name : String
     }
 
+
 type PostProgrammeResult
     = Success String
     | Error
 
+
+
 -- UPDATE --
+
 
 type Msg
     = ProgrammeClicked Programme
@@ -125,6 +128,7 @@ activateProgramme programmeId =
     in
         Http.send ActivationResponseReceived request
 
+
 activationResponse : Decoder PostProgrammeResult
 activationResponse =
     let
@@ -156,10 +160,14 @@ get decoder msg url =
     in
         Http.send msg request
 
+
 type alias Mdl =
     Material.Model
 
+
+
 -- VIEW --
+
 
 view : Material.Model -> Model -> Html Msg
 view mdl programmesModel =
