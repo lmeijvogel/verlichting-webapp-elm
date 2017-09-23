@@ -24,8 +24,7 @@ import Json.Decode exposing (Decoder)
 import Lights
 import Login
 import LiveState exposing (LiveState)
-import MainSwitchState.Model exposing (MainSwitchState, MainSwitchModel)
-import MainSwitchState.Update
+import MainSwitchState
 import VacationMode.Model exposing (VacationModeModel)
 import VacationMode.Update
 import VacationMode.View
@@ -59,7 +58,7 @@ type alias Model =
     , lightsModel : Lights.LightsModel
     , editingLightId : Maybe Int
     , vacationModeModel : VacationModeModel
-    , mainSwitchState : MainSwitchModel
+    , mainSwitchState : MainSwitchState.Model
     , error : String
     , loginFormData : LoginFormData
     , mdl : Material.Model
@@ -75,7 +74,7 @@ init =
       , lightsModel = Lights.new
       , editingLightId = Nothing
       , vacationModeModel = VacationMode.Model.new
-      , mainSwitchState = MainSwitchState.Model.new
+      , mainSwitchState = MainSwitchState.new
       , error = ""
       , loginFormData = newLoginFormData
       , snackbar = Snackbar.model
@@ -99,7 +98,7 @@ type Msg
     | LightMsg Lights.Msg
     | LiveStateClicked LiveState
     | LiveStateReceived (Result Http.Error LiveState)
-    | MainSwitchStateMsg MainSwitchState.Update.Msg
+    | MainSwitchStateMsg MainSwitchState.Msg
     | HealNetwork
     | HealNetworkRequestSent (Result Http.Error String)
     | Snackbar (Snackbar.Msg Msg)
@@ -170,7 +169,7 @@ update msg model =
         MainSwitchStateMsg msg ->
             let
                 ( newMainSwitchState, action ) =
-                    MainSwitchState.Update.update model.mainSwitchState msg
+                    MainSwitchState.update model.mainSwitchState msg
             in
                 ( { model | mainSwitchState = newMainSwitchState }, Cmd.map MainSwitchStateMsg action )
 
@@ -212,7 +211,7 @@ initialize =
     Cmd.batch
         [ Cmd.map ProgrammeMsg Programmes.load
         , getLiveState
-        , Cmd.map MainSwitchStateMsg MainSwitchState.Update.load
+        , Cmd.map MainSwitchStateMsg MainSwitchState.load
         , Cmd.map LightMsg Lights.load
         , Cmd.map VacationModeMsg VacationMode.Update.load
         ]
@@ -341,7 +340,7 @@ view model =
                 [ Icon.i "sync_disabled" ]
 
         indeterminateCheckboxIcon =
-            if model.mainSwitchState.state == MainSwitchState.Model.Enabled then
+            if model.mainSwitchState.state == MainSwitchState.Enabled then
                 []
             else
                 [ Icon.i "indeterminate_check_box" ]
@@ -417,10 +416,10 @@ drawer model =
                 LiveState.Live
 
         newMainSwitchState =
-            if model.mainSwitchState.state == MainSwitchState.Model.Enabled then
-                MainSwitchState.Model.Disabled
+            if model.mainSwitchState.state == MainSwitchState.Enabled then
+                MainSwitchState.Disabled
             else
-                MainSwitchState.Model.Enabled
+                MainSwitchState.Enabled
     in
         div []
             [ MatList.ul []
@@ -442,8 +441,8 @@ drawer model =
                         [ Toggles.checkbox Mdl
                             [ 1 ]
                             model.mdl
-                            [ Toggles.value (model.mainSwitchState.state == MainSwitchState.Model.Enabled)
-                            , Options.onToggle (MainSwitchStateMsg (MainSwitchState.Update.MainSwitchStateClicked newMainSwitchState))
+                            [ Toggles.value (model.mainSwitchState.state == MainSwitchState.Enabled)
+                            , Options.onToggle (MainSwitchStateMsg (MainSwitchState.MainSwitchStateClicked newMainSwitchState))
                             ]
                             [ text "Main switch enabled" ]
                         ]
