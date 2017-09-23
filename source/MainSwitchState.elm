@@ -31,21 +31,21 @@ new =
 
 
 type Msg
-    = MainSwitchStateClicked State
-    | MainSwitchStateReceived (Result Http.Error State)
+    = StateClicked State
+    | StateReceived (Result Http.Error State)
     | Mdl (Material.Msg Msg)
 
 
 update : Model -> Msg -> ( Model, Cmd Msg )
 update model msg =
     case msg of
-        MainSwitchStateClicked state ->
-            ( { model | state = state }, setMainSwitchState state )
+        StateClicked state ->
+            ( { model | state = state }, setState state )
 
-        MainSwitchStateReceived (Ok newState) ->
+        StateReceived (Ok newState) ->
             ( { model | state = newState }, Cmd.none )
 
-        MainSwitchStateReceived (Err _) ->
+        StateReceived (Err _) ->
             ( { model | state = Error }, Cmd.none )
 
         Mdl msg_ ->
@@ -63,11 +63,11 @@ get decoder msg url =
 
 load : Cmd Msg
 load =
-    get decodeMainSwitchState MainSwitchStateReceived "/my_zwave/main_switch"
+    get decodeState StateReceived "/my_zwave/main_switch"
 
 
-setMainSwitchState : State -> Cmd Msg
-setMainSwitchState newState =
+setState : State -> Cmd Msg
+setState newState =
     let
         stateString =
             case newState of
@@ -81,13 +81,13 @@ setMainSwitchState newState =
             "/my_zwave/main_switch/" ++ stateString
 
         request =
-            Http.post url Http.emptyBody decodeMainSwitchState
+            Http.post url Http.emptyBody decodeState
     in
-        Http.send MainSwitchStateReceived request
+        Http.send StateReceived request
 
 
-decodeMainSwitchState : Decoder State
-decodeMainSwitchState =
+decodeState : Decoder State
+decodeState =
     let
         convert : Bool -> Decoder State
         convert state =

@@ -440,7 +440,7 @@ drawer model =
                             [ 1 ]
                             model.mdl
                             [ Toggles.value (model.mainSwitchState.state == MainSwitchState.Enabled)
-                            , Options.onToggle (MainSwitchStateMsg (MainSwitchState.MainSwitchStateClicked newMainSwitchState))
+                            , Options.onToggle (MainSwitchStateMsg (MainSwitchState.StateClicked newMainSwitchState))
                             ]
                             [ text "Main switch enabled" ]
                         ]
