@@ -1,7 +1,7 @@
-module LiveState exposing (LiveState(..))
+module LiveState exposing (State(..))
 
 
-type LiveState
+type State
     = Unknown
     | Live
     | Simulation

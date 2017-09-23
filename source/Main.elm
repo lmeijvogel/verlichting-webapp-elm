@@ -23,7 +23,7 @@ import Programmes
 import Json.Decode exposing (Decoder)
 import Lights
 import Login
-import LiveState exposing (LiveState)
+import LiveState
 import MainSwitchState
 import VacationMode
 import JsonDecoders
@@ -51,7 +51,7 @@ type alias LoginFormData =
 
 type alias Model =
     { loginState : Login.LoginState
-    , liveState : LiveState
+    , liveState : LiveState.State
     , programmesModel : Programmes.Model
     , lightsModel : Lights.LightsModel
     , editingLightId : Maybe Int
@@ -94,8 +94,8 @@ type Msg
     | ProgrammeMsg Programmes.Msg
     | VacationModeMsg VacationMode.Msg
     | LightMsg Lights.Msg
-    | LiveStateClicked LiveState
-    | LiveStateReceived (Result Http.Error LiveState)
+    | LiveStateClicked LiveState.State
+    | LiveStateReceived (Result Http.Error LiveState.State)
     | MainSwitchStateMsg MainSwitchState.Msg
     | HealNetwork
     | HealNetworkRequestSent (Result Http.Error String)
@@ -238,7 +238,7 @@ getLiveState =
     get JsonDecoders.liveState LiveStateReceived "/my_zwave/live"
 
 
-setLiveState : LiveState -> Cmd Msg
+setLiveState : LiveState.State -> Cmd Msg
 setLiveState newState =
     let
         stateString =
