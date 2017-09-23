@@ -25,9 +25,7 @@ import Lights
 import Login
 import LiveState exposing (LiveState)
 import MainSwitchState
-import VacationMode.Model exposing (VacationModeModel)
-import VacationMode.Update
-import VacationMode.View
+import VacationMode
 import JsonDecoders
 
 
@@ -57,7 +55,7 @@ type alias Model =
     , programmesModel : Programmes.Model
     , lightsModel : Lights.LightsModel
     , editingLightId : Maybe Int
-    , vacationModeModel : VacationModeModel
+    , vacationModeModel : VacationMode.Model
     , mainSwitchState : MainSwitchState.Model
     , error : String
     , loginFormData : LoginFormData
@@ -73,7 +71,7 @@ init =
       , programmesModel = Programmes.new
       , lightsModel = Lights.new
       , editingLightId = Nothing
-      , vacationModeModel = VacationMode.Model.new
+      , vacationModeModel = VacationMode.new
       , mainSwitchState = MainSwitchState.new
       , error = ""
       , loginFormData = newLoginFormData
@@ -94,7 +92,7 @@ type Msg
     | SubmitLogin
     | LoginMsg Login.Msg
     | ProgrammeMsg Programmes.Msg
-    | VacationModeMsg VacationMode.Update.Msg
+    | VacationModeMsg VacationMode.Msg
     | LightMsg Lights.Msg
     | LiveStateClicked LiveState
     | LiveStateReceived (Result Http.Error LiveState)
@@ -183,7 +181,7 @@ update msg model =
         VacationModeMsg msg ->
             let
                 ( newVacationModeModel, action ) =
-                    VacationMode.Update.update msg model.vacationModeModel
+                    VacationMode.update msg model.vacationModeModel
             in
                 ( { model | vacationModeModel = newVacationModeModel }, Cmd.map VacationModeMsg action )
 
@@ -213,7 +211,7 @@ initialize =
         , getLiveState
         , Cmd.map MainSwitchStateMsg MainSwitchState.load
         , Cmd.map LightMsg Lights.load
-        , Cmd.map VacationModeMsg VacationMode.Update.load
+        , Cmd.map VacationModeMsg VacationMode.load
         ]
 
 
@@ -327,7 +325,7 @@ view model =
 
         scheduleIcon =
             case model.vacationModeModel.state of
-                VacationMode.Model.Enabled _ _ ->
+                VacationMode.Enabled _ _ ->
                     [ Icon.i "schedule" ]
 
                 _ ->
@@ -388,7 +386,7 @@ view model =
                                     [ Html.map ProgrammeMsg (Programmes.view model.mdl model.programmesModel)
                                     ]
                                 , Grid.cell [ Grid.size Grid.Phone 4, Grid.size Grid.Tablet 8, Grid.size Grid.Desktop 4 ]
-                                    [ Html.map VacationModeMsg (VacationMode.View.view model.mdl model.vacationModeModel)
+                                    [ Html.map VacationModeMsg (VacationMode.view model.mdl model.vacationModeModel)
                                     ]
                                 , Grid.cell [ Grid.size Grid.Phone 4, Grid.size Grid.Tablet 8, Grid.size Grid.Desktop 4 ]
                                     [ Html.map LightMsg (Lights.view model.mdl model.lightsModel)
