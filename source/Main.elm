@@ -338,7 +338,7 @@ view model =
                 [ Icon.i "sync_disabled" ]
 
         indeterminateCheckboxIcon =
-            if model.mainSwitchState.state == MainSwitchState.Enabled then
+            if MainSwitchState.enabled model.mainSwitchState then
                 []
             else
                 [ Icon.i "indeterminate_check_box" ]
@@ -413,11 +413,11 @@ drawer model =
             else
                 LiveState.Live
 
-        newMainSwitchState =
-            if model.mainSwitchState.state == MainSwitchState.Enabled then
-                MainSwitchState.Disabled
+        newMainSwitchAction =
+            if MainSwitchState.enabled model.mainSwitchState then
+                MainSwitchState.Disable
             else
-                MainSwitchState.Enabled
+                MainSwitchState.Enable
     in
         div []
             [ MatList.ul []
@@ -439,8 +439,8 @@ drawer model =
                         [ Toggles.checkbox Mdl
                             [ 1 ]
                             model.mdl
-                            [ Toggles.value (model.mainSwitchState.state == MainSwitchState.Enabled)
-                            , Options.onToggle (MainSwitchStateMsg (MainSwitchState.StateClicked newMainSwitchState))
+                            [ Toggles.value (MainSwitchState.enabled model.mainSwitchState)
+                            , Options.onToggle (MainSwitchStateMsg newMainSwitchAction)
                             ]
                             [ text "Main switch enabled" ]
                         ]

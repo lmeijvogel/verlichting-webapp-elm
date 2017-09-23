@@ -1,4 +1,4 @@
-module MainSwitchState exposing (Model, State(..), Msg(..), new, load, update)
+module MainSwitchState exposing (Model, Msg(Enable, Disable), new, load, update, enabled)
 
 import Http
 import Json.Decode as Decode
@@ -26,12 +26,18 @@ new =
     }
 
 
+enabled : Model -> Bool
+enabled model =
+    model.state == Enabled
+
+
 
 -- UPDATE --
 
 
 type Msg
-    = StateClicked State
+    = Enable
+    | Disable
     | StateReceived (Result Http.Error State)
     | Mdl (Material.Msg Msg)
 
@@ -39,8 +45,11 @@ type Msg
 update : Model -> Msg -> ( Model, Cmd Msg )
 update model msg =
     case msg of
-        StateClicked state ->
-            ( { model | state = state }, setState state )
+        Enable ->
+            ( { model | state = Enabled }, setState Enabled )
+
+        Disable ->
+            ( { model | state = Disabled }, setState Disabled )
 
         StateReceived (Ok newState) ->
             ( { model | state = newState }, Cmd.none )
