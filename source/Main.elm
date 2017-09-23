@@ -21,9 +21,7 @@ import Material.Toggles as Toggles
 import Material.Typography as Typo
 import Programmes
 import Json.Decode exposing (Decoder)
-import Lights.Model exposing (..)
-import Lights.Update exposing (..)
-import Lights.View exposing (..)
+import Lights
 import Login
 import LiveState exposing (LiveState)
 import MainSwitchState.Model exposing (MainSwitchState, MainSwitchModel)
@@ -58,7 +56,7 @@ type alias Model =
     { loginState : Login.LoginState
     , liveState : LiveState
     , programmesModel : Programmes.Model
-    , lightsModel : LightsModel
+    , lightsModel : Lights.LightsModel
     , editingLightId : Maybe Int
     , vacationModeModel : VacationModeModel
     , mainSwitchState : MainSwitchModel
@@ -74,7 +72,7 @@ init =
     ( { loginState = Login.new
       , liveState = LiveState.Unknown
       , programmesModel = Programmes.new
-      , lightsModel = newLightsModel
+      , lightsModel = Lights.new
       , editingLightId = Nothing
       , vacationModeModel = VacationMode.Model.new
       , mainSwitchState = MainSwitchState.Model.new
@@ -98,7 +96,7 @@ type Msg
     | LoginMsg Login.Msg
     | ProgrammeMsg Programmes.Msg
     | VacationModeMsg VacationMode.Update.Msg
-    | LightMsg Lights.Update.Msg
+    | LightMsg Lights.Msg
     | LiveStateClicked LiveState
     | LiveStateReceived (Result Http.Error LiveState)
     | MainSwitchStateMsg MainSwitchState.Update.Msg
@@ -122,7 +120,7 @@ update msg model =
         LightMsg msg ->
             let
                 ( newLightsModel, action ) =
-                    Lights.Update.update msg model.lightsModel
+                    Lights.update msg model.lightsModel
             in
                 ( { model | lightsModel = newLightsModel }, Cmd.map LightMsg action )
 
@@ -214,7 +212,7 @@ initialize =
         [ Cmd.map ProgrammeMsg Programmes.load
         , getLiveState
         , Cmd.map MainSwitchStateMsg MainSwitchState.Update.load
-        , Cmd.map LightMsg Lights.Update.load
+        , Cmd.map LightMsg Lights.load
         , Cmd.map VacationModeMsg VacationMode.Update.load
         ]
 
@@ -393,7 +391,7 @@ view model =
                                     [ Html.map VacationModeMsg (VacationMode.View.view model.mdl model.vacationModeModel)
                                     ]
                                 , Grid.cell [ Grid.size Grid.Phone 4, Grid.size Grid.Tablet 8, Grid.size Grid.Desktop 4 ]
-                                    [ Html.map LightMsg (Lights.View.view model.mdl model.lightsModel)
+                                    [ Html.map LightMsg (Lights.view model.mdl model.lightsModel)
                                     ]
                                 ]
                             , div [] [ text model.error ]

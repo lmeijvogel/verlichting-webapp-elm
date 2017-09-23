@@ -6,7 +6,6 @@ import LiveState exposing (LiveState)
 import MainSwitchState.Model exposing (MainSwitchState)
 
 
-
 healNetwork : Decoder String
 healNetwork =
     field "state" string
