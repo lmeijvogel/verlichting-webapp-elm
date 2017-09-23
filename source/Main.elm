@@ -19,9 +19,7 @@ import Material.Snackbar as Snackbar
 import Material.Textfield as Textfield
 import Material.Toggles as Toggles
 import Material.Typography as Typo
-import Programmes.Model exposing (..)
-import Programmes.Update
-import Programmes.View
+import Programmes
 import Json.Decode exposing (Decoder)
 import Lights.Model exposing (..)
 import Lights.Update exposing (..)
@@ -59,7 +57,7 @@ type alias LoginFormData =
 type alias Model =
     { loginState : Login.LoginState
     , liveState : LiveState
-    , programmesModel : ProgrammesModel
+    , programmesModel : Programmes.Model
     , lightsModel : LightsModel
     , editingLightId : Maybe Int
     , vacationModeModel : VacationModeModel
@@ -75,7 +73,7 @@ init : ( Model, Cmd Msg )
 init =
     ( { loginState = Login.new
       , liveState = LiveState.Unknown
-      , programmesModel = newProgrammesModel
+      , programmesModel = Programmes.new
       , lightsModel = newLightsModel
       , editingLightId = Nothing
       , vacationModeModel = VacationMode.Model.new
@@ -98,7 +96,7 @@ type Msg
     | PasswordChanged String
     | SubmitLogin
     | LoginMsg Login.Msg
-    | ProgrammeMsg Programmes.Update.Msg
+    | ProgrammeMsg Programmes.Msg
     | VacationModeMsg VacationMode.Update.Msg
     | LightMsg Lights.Update.Msg
     | LiveStateClicked LiveState
@@ -117,7 +115,7 @@ update msg model =
         ProgrammeMsg msg ->
             let
                 ( newProgrammesModel, action ) =
-                    Programmes.Update.update msg model.programmesModel
+                    Programmes.update msg model.programmesModel
             in
                 ( { model | programmesModel = newProgrammesModel }, Cmd.map ProgrammeMsg action )
 
@@ -213,7 +211,7 @@ update msg model =
 initialize : Cmd Msg
 initialize =
     Cmd.batch
-        [ Cmd.map ProgrammeMsg Programmes.Update.load
+        [ Cmd.map ProgrammeMsg Programmes.load
         , getLiveState
         , Cmd.map MainSwitchStateMsg MainSwitchState.Update.load
         , Cmd.map LightMsg Lights.Update.load
@@ -389,7 +387,7 @@ view model =
                         div []
                             [ Grid.grid []
                                 [ Grid.cell [ Grid.size Grid.Phone 4, Grid.size Grid.Tablet 8, Grid.size Grid.Desktop 4 ]
-                                    [ Html.map ProgrammeMsg (Programmes.View.view model.mdl model.programmesModel)
+                                    [ Html.map ProgrammeMsg (Programmes.view model.mdl model.programmesModel)
                                     ]
                                 , Grid.cell [ Grid.size Grid.Phone 4, Grid.size Grid.Tablet 8, Grid.size Grid.Desktop 4 ]
                                     [ Html.map VacationModeMsg (VacationMode.View.view model.mdl model.vacationModeModel)

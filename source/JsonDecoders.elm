@@ -1,54 +1,15 @@
-module JsonDecoders exposing (availableProgrammes, currentProgramme, activationResponse, liveState, mainSwitchState, PostProgrammeResult(..), healNetwork)
+module JsonDecoders exposing (liveState, mainSwitchState, healNetwork)
 
 import Json.Decode as Decode
 import Json.Decode exposing (..)
-import Programmes.Model exposing (Programme)
 import LiveState exposing (LiveState)
 import MainSwitchState.Model exposing (MainSwitchState)
 
-
-type PostProgrammeResult
-    = Success String
-    | Error
-
-
-availableProgrammes : Decoder (List Programme)
-availableProgrammes =
-    let
-        tupleToProgramme : ( String, String ) -> Programme
-        tupleToProgramme ( id, name ) =
-            Programme id name
-
-        convert : List ( String, String ) -> Decoder (List Programme)
-        convert tupleList =
-            Decode.succeed (List.map tupleToProgramme tupleList)
-    in
-        field "availableProgrammes" (keyValuePairs (string))
-            |> Decode.andThen convert
-            |> Decode.map List.reverse
-
-
-currentProgramme : Decoder String
-currentProgramme =
-    field "programme" string
 
 
 healNetwork : Decoder String
 healNetwork =
     field "state" string
-
-
-activationResponse : Decoder PostProgrammeResult
-activationResponse =
-    let
-        decodeResult : Bool -> Decoder PostProgrammeResult
-        decodeResult success =
-            if success then
-                map Success (field "programme" string)
-            else
-                Decode.succeed Error
-    in
-        field "success" bool |> Decode.andThen decodeResult
 
 
 liveState : Decoder LiveState
