@@ -50,7 +50,7 @@ type alias LoginFormData =
 
 
 type alias Model =
-    { loginState : Login.LoginState
+    { loginModel : Login.Model
     , liveState : LiveState.State
     , programmesModel : Programmes.Model
     , lightsModel : Lights.LightsModel
@@ -66,7 +66,7 @@ type alias Model =
 
 init : ( Model, Cmd Msg )
 init =
-    ( { loginState = Login.new
+    ( { loginModel = Login.new
       , liveState = LiveState.Unknown
       , programmesModel = Programmes.new
       , lightsModel = Lights.new
@@ -147,7 +147,7 @@ update msg model =
         LoginMsg msg ->
             let
                 ( newLoginState, loginStateChanged ) =
-                    Login.update msg model.loginState
+                    Login.update msg model.loginModel
 
                 nextLoginFormData =
                     if loginStateChanged then
@@ -162,7 +162,7 @@ update msg model =
                     else
                         Cmd.none
             in
-                ( { model | loginState = newLoginState, loginFormData = nextLoginFormData }, nextCommand )
+                ( { model | loginModel = newLoginState, loginFormData = nextLoginFormData }, nextCommand )
 
         MainSwitchStateMsg msg ->
             let
@@ -363,7 +363,7 @@ view model =
             , drawer = [ drawer model ]
             , tabs = ( [], [] )
             , main =
-                [ case model.loginState of
+                [ case model.loginModel.state of
                     Login.Unknown ->
                         div []
                             [ Grid.grid [ Options.center ]

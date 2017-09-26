@@ -1,12 +1,8 @@
-module Login exposing (LoginState(..), Msg, new, checkLoggedIn, update, logIn)
+module Login exposing (Model, LoginState(..), Msg, new, checkLoggedIn, update, logIn)
 
 import Http
 import Json.Decode exposing (..)
 import Json.Encode
-
-
-type Msg
-    = LoginChecked (Result Http.Error LoginState)
 
 
 type LoginState
@@ -15,27 +11,37 @@ type LoginState
     | LoggedIn
 
 
-new : LoginState
+type alias Model =
+    { state : LoginState
+    }
+
+
+new : Model
 new =
-    Unknown
+    { state = Unknown
+    }
 
 
-update : Msg -> LoginState -> ( LoginState, Bool )
-update msg loginState =
+type Msg
+    = LoginChecked (Result Http.Error LoginState)
+
+
+update : Msg -> Model -> ( Model, Bool )
+update msg model =
     case msg of
         LoginChecked (Ok newLoginState) ->
             let
                 stateChanged =
-                    loginState /= newLoginState
+                    model.state /= newLoginState
             in
-                ( newLoginState, stateChanged )
+                ( { model | state = newLoginState }, stateChanged )
 
         LoginChecked (Err error) ->
             let
                 stateChanged =
-                    loginState == LoggedIn
+                    model.state == LoggedIn
             in
-                ( NotLoggedIn, stateChanged )
+                ( { model | state = NotLoggedIn }, stateChanged )
 
 
 checkLoggedIn : Cmd Msg
