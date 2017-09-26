@@ -43,12 +43,6 @@ main =
 -- MODEL
 
 
-type alias LoginFormData =
-    { username : String
-    , password : String
-    }
-
-
 type alias Model =
     { loginModel : Login.Model
     , liveState : LiveState.State
@@ -58,7 +52,6 @@ type alias Model =
     , vacationModeModel : VacationMode.Model
     , mainSwitchState : MainSwitchState.Model
     , error : String
-    , loginFormData : LoginFormData
     , mdl : Material.Model
     , snackbar : Snackbar.Model Msg
     }
@@ -74,7 +67,6 @@ init =
       , vacationModeModel = VacationMode.new
       , mainSwitchState = MainSwitchState.new
       , error = ""
-      , loginFormData = newLoginFormData
       , snackbar = Snackbar.model
       , mdl = Material.model
       }
@@ -132,29 +124,22 @@ update msg model =
 
         UsernameChanged username ->
             let
-                loginFormData =
-                    model.loginFormData
+                loginModel =
+                    model.loginModel
             in
-                ( { model | loginFormData = { loginFormData | username = username } }, Cmd.none )
+                ( { model | loginModel = { loginModel | username = username } }, Cmd.none )
 
         PasswordChanged password ->
             let
-                loginFormData =
-                    model.loginFormData
+                loginModel =
+                    model.loginModel
             in
-                ( { model | loginFormData = { loginFormData | password = password } }, Cmd.none )
+                ( { model | loginModel = { loginModel | password = password } }, Cmd.none )
 
         LoginMsg msg ->
             let
                 ( newLoginState, loginStateChanged ) =
                     Login.update msg model.loginModel
-
-                nextLoginFormData =
-                    if loginStateChanged then
-                        newLoginFormData
-                        -- Clear login form data after logging in
-                    else
-                        model.loginFormData
 
                 nextCommand =
                     if loginStateChanged then
@@ -162,7 +147,7 @@ update msg model =
                     else
                         Cmd.none
             in
-                ( { model | loginModel = newLoginState, loginFormData = nextLoginFormData }, nextCommand )
+                ( { model | loginModel = newLoginState }, nextCommand )
 
         MainSwitchStateMsg msg ->
             let
@@ -174,7 +159,7 @@ update msg model =
         SubmitLogin ->
             let
                 { username, password } =
-                    model.loginFormData
+                    model.loginModel
             in
                 ( model, Cmd.map LoginMsg (Login.logIn username password) )
 
@@ -213,11 +198,6 @@ initialize =
         , Cmd.map LightMsg Lights.load
         , Cmd.map VacationModeMsg VacationMode.load
         ]
-
-
-newLoginFormData : LoginFormData
-newLoginFormData =
-    (LoginFormData "" "")
 
 
 type alias Url =

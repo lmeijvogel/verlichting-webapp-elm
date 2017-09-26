@@ -13,12 +13,16 @@ type LoginState
 
 type alias Model =
     { state : LoginState
+    , username : String
+    , password : String
     }
 
 
 new : Model
 new =
     { state = Unknown
+    , username = ""
+    , password = ""
     }
 
 
@@ -34,7 +38,7 @@ update msg model =
                 stateChanged =
                     model.state /= newLoginState
             in
-                ( { model | state = newLoginState }, stateChanged )
+                ( { model | state = newLoginState, username = "", password = "" }, stateChanged )
 
         LoginChecked (Err error) ->
             let
