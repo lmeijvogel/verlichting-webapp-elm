@@ -170,11 +170,7 @@ initialize =
         ]
 
 
-type alias Url =
-    String
-
-
-get : Decoder a -> (Result Http.Error a -> Msg) -> Url -> Cmd Msg
+get : Decoder a -> (Result Http.Error a -> Msg) -> String -> Cmd Msg
 get decoder msg url =
     let
         request =
