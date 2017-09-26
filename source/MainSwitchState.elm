@@ -1,4 +1,4 @@
-module MainSwitchState exposing (Model, Msg(Enable, Disable), new, load, update, enabled)
+module MainSwitchState exposing (Model, Msg(Enable, Disable), new, load, update, isEnabled)
 
 import Http
 import Json.Decode as Decode
@@ -26,8 +26,8 @@ new =
     }
 
 
-enabled : Model -> Bool
-enabled model =
+isEnabled : Model -> Bool
+isEnabled model =
     model.state == Enabled
 
 
