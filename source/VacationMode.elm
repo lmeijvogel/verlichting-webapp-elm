@@ -2,11 +2,11 @@ module VacationMode
     exposing
         ( Model
         , Msg
-        , State(..)
         , new
         , load
         , update
         , view
+        , isEnabled
         )
 
 import Http
@@ -89,6 +89,16 @@ timeOfDayFromString time =
                 |> Result.andThen String.toInt
     in
         Result.map2 TimeOfDay hour minute
+
+
+isEnabled : Model -> Bool
+isEnabled model =
+    case model.state of
+        Enabled _ _ ->
+            True
+
+        _ ->
+            False
 
 
 
