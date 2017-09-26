@@ -317,40 +317,37 @@ view model =
             , drawer = [ drawer model ]
             , tabs = ( [], [] )
             , main =
-                [ case model.loginModel.state of
-                    Login.Unknown ->
-                        div []
-                            [ Grid.grid [ Options.center ]
-                                [ Grid.cell
-                                    [ Options.center
-                                    , Grid.size Grid.Phone 4
-                                    , Grid.size Grid.Tablet 8
-                                    , Grid.size Grid.Desktop 12
-                                    ]
-                                    [ Spinner.spinner
-                                        [ Spinner.active True ]
-                                    ]
+                [ if Login.isLoginPending model.loginModel then
+                    div []
+                        [ Grid.grid [ Options.center ]
+                            [ Grid.cell
+                                [ Options.center
+                                , Grid.size Grid.Phone 4
+                                , Grid.size Grid.Tablet 8
+                                , Grid.size Grid.Desktop 12
+                                ]
+                                [ Spinner.spinner
+                                    [ Spinner.active True ]
                                 ]
                             ]
-
-                    Login.LoggedIn ->
-                        div []
-                            [ Grid.grid []
-                                [ Grid.cell [ Grid.size Grid.Phone 4, Grid.size Grid.Tablet 8, Grid.size Grid.Desktop 4 ]
-                                    [ Html.map ProgrammeMsg (Programmes.view model.mdl model.programmesModel)
-                                    ]
-                                , Grid.cell [ Grid.size Grid.Phone 4, Grid.size Grid.Tablet 8, Grid.size Grid.Desktop 4 ]
-                                    [ Html.map VacationModeMsg (VacationMode.view model.mdl model.vacationModeModel)
-                                    ]
-                                , Grid.cell [ Grid.size Grid.Phone 4, Grid.size Grid.Tablet 8, Grid.size Grid.Desktop 4 ]
-                                    [ Html.map LightMsg (Lights.view model.mdl model.lightsModel)
-                                    ]
+                        ]
+                  else if Login.isLoggedIn model.loginModel then
+                    div []
+                        [ Grid.grid []
+                            [ Grid.cell [ Grid.size Grid.Phone 4, Grid.size Grid.Tablet 8, Grid.size Grid.Desktop 4 ]
+                                [ Html.map ProgrammeMsg (Programmes.view model.mdl model.programmesModel)
                                 ]
-                            , div [] [ text model.error ]
+                            , Grid.cell [ Grid.size Grid.Phone 4, Grid.size Grid.Tablet 8, Grid.size Grid.Desktop 4 ]
+                                [ Html.map VacationModeMsg (VacationMode.view model.mdl model.vacationModeModel)
+                                ]
+                            , Grid.cell [ Grid.size Grid.Phone 4, Grid.size Grid.Tablet 8, Grid.size Grid.Desktop 4 ]
+                                [ Html.map LightMsg (Lights.view model.mdl model.lightsModel)
+                                ]
                             ]
-
-                    Login.NotLoggedIn ->
-                        Html.map LoginMsg (Login.view model.loginModel)
+                        , div [] [ text model.error ]
+                        ]
+                  else
+                    Html.map LoginMsg (Login.view model.loginModel)
                 , Snackbar.view model.snackbar |> Html.map Snackbar
                 ]
             }

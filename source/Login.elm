@@ -1,4 +1,4 @@
-module Login exposing (Model, LoginState(..), Msg, new, update, view, checkLoggedIn)
+module Login exposing (Model, Msg, new, update, view, checkLoggedIn, isLoggedIn, isLoginPending)
 
 import Html exposing (Html, div, p, text)
 import Http
@@ -11,7 +11,9 @@ import Material.Options as Options
 import Material.Textfield as Textfield
 import Material.Typography as Typo
 
+
 -- MODEL --
+
 
 type LoginState
     = Unknown
@@ -35,7 +37,20 @@ new =
     , mdl = Material.model
     }
 
+
+isLoggedIn : Model -> Bool
+isLoggedIn model =
+    model.state == LoggedIn
+
+
+isLoginPending : Model -> Bool
+isLoginPending model =
+    model.state == Unknown
+
+
+
 -- UPDATE --
+
 
 type Msg
     = UsernameChanged String
