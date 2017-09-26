@@ -46,7 +46,6 @@ type alias Model =
     , liveState : LiveState.State
     , programmesModel : Programmes.Model
     , lightsModel : Lights.LightsModel
-    , editingLightId : Maybe Int
     , vacationModeModel : VacationMode.Model
     , mainSwitchState : MainSwitchState.Model
     , error : String
@@ -61,7 +60,6 @@ init =
       , liveState = LiveState.Unknown
       , programmesModel = Programmes.new
       , lightsModel = Lights.new
-      , editingLightId = Nothing
       , vacationModeModel = VacationMode.new
       , mainSwitchState = MainSwitchState.new
       , error = ""
