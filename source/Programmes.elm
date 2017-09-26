@@ -1,6 +1,6 @@
 module Programmes exposing (Model, Msg(ProgrammeClicked), new, load, update, view)
 
-import Html exposing (Html, ul, li, div, span, p, text, button, label, input)
+import Html exposing (Html, p, text)
 import Http
 import Json.Decode as Decode
 import Json.Decode exposing (..)
@@ -9,7 +9,7 @@ import Material.Button as Button
 import Material.Card as Card
 import Material.List as MatList
 import Material.Typography as Typo
-import Material.Options as Options exposing (css)
+import Material.Options as Options
 
 
 -- MODEL --

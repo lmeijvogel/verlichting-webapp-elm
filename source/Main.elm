@@ -1,8 +1,8 @@
 module Main exposing (..)
 
 import Http
-import Html exposing (Html, ul, li, div, span, p, text, button, label, input)
-import Html.Attributes exposing (placeholder, href, rel, type_, value)
+import Html exposing (Html, div, span, text)
+import Html.Attributes
 import Material
 import Material.Button as Button
 import Material.Color as Color
@@ -12,7 +12,7 @@ import Material.Icon as Icon
 import Material.Layout as Layout
 import Material.List as MatList
 import Material.Spinner as Spinner
-import Material.Options as Options exposing (css)
+import Material.Options as Options
 import Material.Scheme as Scheme
 import Material.Snackbar as Snackbar
 import Material.Toggles as Toggles

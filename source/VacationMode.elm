@@ -10,9 +10,9 @@ module VacationMode
         )
 
 import Http
-import Html exposing (Html, ul, li, div, span, p, text, button, label, input)
-import Html.Attributes exposing (placeholder, href, rel, type_, value)
-import Html.Events exposing (onInput, onClick)
+import Html exposing (Html, input, p, text)
+import Html.Attributes
+import Html.Events exposing (onInput)
 import Json.Encode
 import Json.Decode exposing (..)
 import Json.Decode as Decode
@@ -20,7 +20,7 @@ import Material
 import Material.Button as Button
 import Material.Card as Card
 import Material.List as MatList
-import Material.Options as Options exposing (css)
+import Material.Options as Options
 import Material.Typography as Typo
 
 
@@ -313,7 +313,7 @@ view mdl vacationModeModel =
                                 text (timeOfDayToString vacationModeModel.nextStartTime)
                               else
                                 input
-                                    [ type_ "time"
+                                    [ Html.Attributes.type_ "time"
                                     , Html.Attributes.value (timeOfDayToString vacationModeModel.nextStartTime)
                                     , onInput (\s -> StartTimeChanged s)
                                     ]
@@ -329,7 +329,7 @@ view mdl vacationModeModel =
                                 text (timeOfDayToString vacationModeModel.nextEndTime)
                               else
                                 input
-                                    [ type_ "time"
+                                    [ Html.Attributes.type_ "time"
                                     , Html.Attributes.value (timeOfDayToString vacationModeModel.nextEndTime)
                                     , onInput (\s -> EndTimeChanged s)
                                     ]

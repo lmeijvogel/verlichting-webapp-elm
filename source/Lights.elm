@@ -1,7 +1,7 @@
 module Lights exposing (LightsModel, Msg, new, load, update, view)
 
 import Http
-import Html exposing (Html, ul, li, div, span, p, text, button, label, input)
+import Html exposing (Html, div, p, text)
 import Json.Decode exposing (..)
 import Material
 import Material.Button as Button
@@ -9,7 +9,7 @@ import Material.Card as Card
 import Material.Chip as Chip
 import Material.Color as Color
 import Material.List as MatList
-import Material.Options as Options exposing (css)
+import Material.Options as Options
 import Material.Slider as Slider
 import Material.Toggles as Toggles
 import Material.Typography as Typo
