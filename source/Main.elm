@@ -251,10 +251,6 @@ showNetworkRequestSent model result =
 -- VIEW
 
 
-type alias Mdl =
-    Material.Model
-
-
 view : Model -> Html Msg
 view model =
     let
