@@ -1,9 +1,17 @@
-module Login exposing (Model, LoginState(..), Msg, new, checkLoggedIn, update, logIn)
+module Login exposing (Model, LoginState(..), Msg, new, update, view, checkLoggedIn)
 
+import Html exposing (Html, div, p, text)
 import Http
 import Json.Decode exposing (..)
 import Json.Encode
+import Material
+import Material.Button as Button
+import Material.Card as Card
+import Material.Options as Options
+import Material.Textfield as Textfield
+import Material.Typography as Typo
 
+-- MODEL --
 
 type LoginState
     = Unknown
@@ -15,6 +23,7 @@ type alias Model =
     { state : LoginState
     , username : String
     , password : String
+    , mdl : Material.Model
     }
 
 
@@ -23,29 +32,51 @@ new =
     { state = Unknown
     , username = ""
     , password = ""
+    , mdl = Material.model
     }
 
+-- UPDATE --
 
 type Msg
-    = LoginChecked (Result Http.Error LoginState)
+    = UsernameChanged String
+    | PasswordChanged String
+    | SubmitLogin
+    | LoginChecked (Result Http.Error LoginState)
+    | Mdl (Material.Msg Msg)
 
 
-update : Msg -> Model -> ( Model, Bool )
+type alias LoginSuccessful =
+    Bool
+
+
+update : Msg -> Model -> ( Model, Cmd Msg, LoginSuccessful )
 update msg model =
     case msg of
-        LoginChecked (Ok newLoginState) ->
+        UsernameChanged username ->
+            ( { model | username = username }, Cmd.none, False )
+
+        PasswordChanged password ->
+            ( { model | password = password }, Cmd.none, False )
+
+        SubmitLogin ->
             let
-                stateChanged =
-                    model.state /= newLoginState
+                { username, password } =
+                    model
             in
-                ( { model | state = newLoginState, username = "", password = "" }, stateChanged )
+                ( model, logIn username password, False )
+
+        LoginChecked (Ok newLoginState) ->
+            ( { model | state = newLoginState, username = "", password = "" }, Cmd.none, True )
 
         LoginChecked (Err error) ->
+            ( { model | state = NotLoggedIn }, Cmd.none, False )
+
+        Mdl msg_ ->
             let
-                stateChanged =
-                    model.state == LoggedIn
+                ( newModel, msg ) =
+                    Material.update Mdl msg_ model
             in
-                ( { model | state = NotLoggedIn }, stateChanged )
+                ( newModel, msg, False )
 
 
 checkLoggedIn : Cmd Msg
@@ -94,3 +125,47 @@ decodeLogin =
     in
         (field "loggedIn" bool)
             |> Json.Decode.andThen convert
+
+
+
+-- VIEW --
+
+
+view : Model -> Html Msg
+view model =
+    Card.view []
+        [ Card.title []
+            [ Options.styled p [ Typo.title ] [ text "Please login" ]
+            ]
+        , Card.text []
+            [ div []
+                [ Textfield.render Mdl
+                    [ 0 ]
+                    model.mdl
+                    [ Textfield.label "Username"
+                    , Textfield.floatingLabel
+                    , Textfield.text_
+                    , Options.onInput UsernameChanged
+                    ]
+                    []
+                , Textfield.render Mdl
+                    [ 1 ]
+                    model.mdl
+                    [ Textfield.label "Password"
+                    , Textfield.floatingLabel
+                    , Textfield.password
+                    , Options.onInput PasswordChanged
+                    ]
+                    []
+                , div []
+                    [ Button.render Mdl
+                        [ 2 ]
+                        model.mdl
+                        [ Button.raised
+                        , Options.onClick SubmitLogin
+                        ]
+                        [ text "Log in" ]
+                    ]
+                ]
+            ]
+        ]

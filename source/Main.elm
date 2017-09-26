@@ -5,7 +5,6 @@ import Html exposing (Html, ul, li, div, span, p, text, button, label, input)
 import Html.Attributes exposing (placeholder, href, rel, type_, value)
 import Material
 import Material.Button as Button
-import Material.Card as Card
 import Material.Color as Color
 import Material.Grid as Grid
 import Material.Helpers exposing (map1st, map2nd)
@@ -16,7 +15,6 @@ import Material.Spinner as Spinner
 import Material.Options as Options exposing (css)
 import Material.Scheme as Scheme
 import Material.Snackbar as Snackbar
-import Material.Textfield as Textfield
 import Material.Toggles as Toggles
 import Material.Typography as Typo
 import Programmes
@@ -79,10 +77,7 @@ init =
 
 
 type Msg
-    = UsernameChanged String
-    | PasswordChanged String
-    | SubmitLogin
-    | LoginMsg Login.Msg
+    = LoginMsg Login.Msg
     | ProgrammeMsg Programmes.Msg
     | VacationModeMsg VacationMode.Msg
     | LightMsg Lights.Msg
@@ -122,32 +117,18 @@ update msg model =
         LiveStateReceived (Err _) ->
             ( { model | liveState = LiveState.Error }, Cmd.none )
 
-        UsernameChanged username ->
-            let
-                loginModel =
-                    model.loginModel
-            in
-                ( { model | loginModel = { loginModel | username = username } }, Cmd.none )
-
-        PasswordChanged password ->
-            let
-                loginModel =
-                    model.loginModel
-            in
-                ( { model | loginModel = { loginModel | password = password } }, Cmd.none )
-
         LoginMsg msg ->
             let
-                ( newLoginState, loginStateChanged ) =
+                ( newLoginModel, cmd, loginSuccessful ) =
                     Login.update msg model.loginModel
 
                 nextCommand =
-                    if loginStateChanged then
+                    if loginSuccessful then
                         initialize
                     else
-                        Cmd.none
+                        Cmd.map LoginMsg cmd
             in
-                ( { model | loginModel = newLoginState }, nextCommand )
+                ( { model | loginModel = newLoginModel }, nextCommand )
 
         MainSwitchStateMsg msg ->
             let
@@ -155,13 +136,6 @@ update msg model =
                     MainSwitchState.update model.mainSwitchState msg
             in
                 ( { model | mainSwitchState = newMainSwitchState }, Cmd.map MainSwitchStateMsg action )
-
-        SubmitLogin ->
-            let
-                { username, password } =
-                    model.loginModel
-            in
-                ( model, Cmd.map LoginMsg (Login.logIn username password) )
 
         VacationModeMsg msg ->
             let
@@ -376,7 +350,7 @@ view model =
                             ]
 
                     Login.NotLoggedIn ->
-                        loginCard model
+                        Html.map LoginMsg (Login.view model.loginModel)
                 , Snackbar.view model.snackbar |> Html.map Snackbar
                 ]
             }
@@ -439,46 +413,6 @@ drawer model =
                     ]
                 ]
             ]
-
-
-loginCard : Model -> Html Msg
-loginCard model =
-    Card.view []
-        [ Card.title []
-            [ Options.styled p [ Typo.title ] [ text "Please login" ]
-            ]
-        , Card.text []
-            [ div []
-                [ Textfield.render Mdl
-                    [ 0 ]
-                    model.mdl
-                    [ Textfield.label "Username"
-                    , Textfield.floatingLabel
-                    , Textfield.text_
-                    , Options.onInput UsernameChanged
-                    ]
-                    []
-                , Textfield.render Mdl
-                    [ 1 ]
-                    model.mdl
-                    [ Textfield.label "Password"
-                    , Textfield.floatingLabel
-                    , Textfield.password
-                    , Options.onInput PasswordChanged
-                    ]
-                    []
-                , div []
-                    [ Button.render Mdl
-                        [ 2 ]
-                        model.mdl
-                        [ Button.raised
-                        , Options.onClick SubmitLogin
-                        ]
-                        [ text "Log in" ]
-                    ]
-                ]
-            ]
-        ]
 
 
 subscriptions : Model -> Sub Msg
