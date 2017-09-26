@@ -17,12 +17,12 @@ import Material.Scheme as Scheme
 import Material.Snackbar as Snackbar
 import Material.Toggles as Toggles
 import Material.Typography as Typo
-import Programmes
 import Json.Decode exposing (Decoder)
 import Lights
 import Login
 import LiveState
 import MainSwitchState
+import Programmes
 import VacationMode
 import JsonDecoders
 
