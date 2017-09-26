@@ -1,4 +1,4 @@
-module Programmes exposing (Model, Msg(ProgrammeClicked), new, load, update, view)
+module Programmes exposing (Model, Msg, new, load, update, view)
 
 import Html exposing (Html, p, text)
 import Http
