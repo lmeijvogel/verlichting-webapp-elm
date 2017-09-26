@@ -48,7 +48,6 @@ type alias Model =
     , lightsModel : Lights.LightsModel
     , vacationModeModel : VacationMode.Model
     , mainSwitchState : MainSwitchState.Model
-    , error : String
     , mdl : Material.Model
     , snackbar : Snackbar.Model Msg
     }
@@ -62,7 +61,6 @@ init =
       , lightsModel = Lights.new
       , vacationModeModel = VacationMode.new
       , mainSwitchState = MainSwitchState.new
-      , error = ""
       , snackbar = Snackbar.model
       , mdl = Material.model
       }
@@ -340,7 +338,6 @@ view model =
                                 [ Html.map LightMsg (Lights.view model.mdl model.lightsModel)
                                 ]
                             ]
-                        , div [] [ text model.error ]
                         ]
                   else
                     Html.map LoginMsg (Login.view model.loginModel)
