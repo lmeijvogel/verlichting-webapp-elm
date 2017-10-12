@@ -19,6 +19,7 @@ import Json.Decode as Decode
 import Material
 import Material.Button as Button
 import Material.Card as Card
+import Material.Elevation as Elevation
 import Material.List as MatList
 import Material.Options as Options
 import Material.Typography as Typo
@@ -296,7 +297,7 @@ view mdl vacationModeModel =
             else
                 Enable
     in
-        Card.view []
+        Card.view [ Elevation.e2 ]
             [ Card.title []
                 [ let
                     titleText =

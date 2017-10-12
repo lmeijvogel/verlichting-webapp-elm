@@ -8,6 +8,7 @@ import Material.Button as Button
 import Material.Card as Card
 import Material.Chip as Chip
 import Material.Color as Color
+import Material.Elevation as Elevation
 import Material.Icon as Icon
 import Material.List as MatList
 import Material.Options as Options
@@ -210,7 +211,7 @@ view mdl model =
                         text "Unknown light selected!"
 
         Nothing ->
-            Card.view []
+            Card.view [ Elevation.e2 ]
                 [ Card.title [ Options.onClick Load ]
                     [ Options.styled p [ Typo.title ] [ text "Lichten" ]
                     ]

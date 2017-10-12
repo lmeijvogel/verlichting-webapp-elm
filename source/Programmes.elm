@@ -7,6 +7,7 @@ import Json.Decode exposing (..)
 import Material
 import Material.Button as Button
 import Material.Card as Card
+import Material.Elevation as Elevation
 import Material.Color as Color
 import Material.Icon as Icon
 import Material.List as MatList
@@ -177,7 +178,7 @@ type alias Mdl =
 
 view : Material.Model -> Model -> Html Msg
 view mdl programmesModel =
-    Card.view []
+    Card.view [ Elevation.e2 ]
         [ Card.title []
             [ Options.styled p [ Typo.title ] [ text "Programma's" ]
             ]
