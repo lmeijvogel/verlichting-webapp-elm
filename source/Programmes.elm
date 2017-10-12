@@ -7,6 +7,8 @@ import Json.Decode exposing (..)
 import Material
 import Material.Button as Button
 import Material.Card as Card
+import Material.Color as Color
+import Material.Icon as Icon
 import Material.List as MatList
 import Material.Typography as Typo
 import Material.Options as Options
@@ -50,7 +52,8 @@ type PostProgrammeResult
 
 
 type Msg
-    = ProgrammeClicked Programme
+    = Load
+    | ProgrammeClicked Programme
     | ProgrammesReceived (Result Http.Error (List Programme))
     | ActivationResponseReceived (Result Http.Error PostProgrammeResult)
     | CurrentProgrammeReceived (Result Http.Error String)
@@ -60,6 +63,9 @@ type Msg
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg programmesModel =
     case msg of
+        Load ->
+            ( programmesModel, load )
+
         ProgrammesReceived (Ok availableProgrammes) ->
             ( { programmesModel | availableProgrammes = availableProgrammes }, getCurrentProgramme )
 
@@ -178,6 +184,13 @@ view mdl programmesModel =
         , Card.text []
             [ MatList.ul []
                 (List.map (\programme -> programmeEntry programme mdl programmesModel.currentProgramme programmesModel.pendingProgramme) programmesModel.availableProgrammes)
+            ]
+        , Card.actions [ Card.border, Options.css "vertical-align" "center", Options.css "text-align" "right", (Color.text Color.black) ]
+            [ Button.render Mdl
+                [ 8, 1 ]
+                programmesModel.mdl
+                [ Button.icon, Button.ripple, Options.onClick Load ]
+                [ Icon.i "refresh" ]
             ]
         ]
 
