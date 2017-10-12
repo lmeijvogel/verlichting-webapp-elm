@@ -8,6 +8,7 @@ import Material.Button as Button
 import Material.Card as Card
 import Material.Chip as Chip
 import Material.Color as Color
+import Material.Icon as Icon
 import Material.List as MatList
 import Material.Options as Options
 import Material.Slider as Slider
@@ -53,7 +54,8 @@ type LightValue
 
 
 type Msg
-    = Received (Result Http.Error (List Light))
+    = Load
+    | Received (Result Http.Error (List Light))
     | ShowLight (Maybe Light)
     | Update Light LightValue Bool
     | Save Light
@@ -64,6 +66,9 @@ type Msg
 update : Msg -> LightsModel -> ( LightsModel, Cmd Msg )
 update msg lightsModel =
     case msg of
+        Load ->
+            ( lightsModel, load )
+
         Received (Ok newLights) ->
             ( { lightsModel | lights = newLights }, Cmd.none )
 
@@ -206,12 +211,19 @@ view mdl model =
 
         Nothing ->
             Card.view []
-                [ Card.title []
+                [ Card.title [ Options.onClick Load ]
                     [ Options.styled p [ Typo.title ] [ text "Lichten" ]
                     ]
                 , Card.text []
                     [ MatList.ul []
                         (List.map (\light -> lightEntry light) model.lights)
+                    ]
+                , Card.actions [ Card.border, Options.css "vertical-align" "center", Options.css "text-align" "right", (Color.text Color.black) ]
+                    [ Button.render Mdl
+                        [ 8, 1 ]
+                        model.mdl
+                        [ Button.icon, Button.ripple, Options.onClick Load ]
+                        [ Icon.i "refresh" ]
                     ]
                 ]
 
