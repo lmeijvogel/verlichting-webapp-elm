@@ -23,6 +23,7 @@ import Login
 import LiveState
 import MainSwitchState
 import Programmes
+import RecentEvents
 import VacationMode
 import JsonDecoders
 
@@ -47,6 +48,7 @@ type alias Model =
     , programmesModel : Programmes.Model
     , lightsModel : Lights.LightsModel
     , vacationModeModel : VacationMode.Model
+    , recentEventsModel : RecentEvents.Model
     , mainSwitchState : MainSwitchState.Model
     , mdl : Material.Model
     , snackbar : Snackbar.Model Msg
@@ -60,6 +62,7 @@ init =
       , programmesModel = Programmes.new
       , lightsModel = Lights.new
       , vacationModeModel = VacationMode.new
+      , recentEventsModel = RecentEvents.new
       , mainSwitchState = MainSwitchState.new
       , snackbar = Snackbar.model
       , mdl = Material.model
@@ -77,6 +80,7 @@ type Msg
     | ProgrammeMsg Programmes.Msg
     | VacationModeMsg VacationMode.Msg
     | LightMsg Lights.Msg
+    | RecentEventsMsg RecentEvents.Msg
     | LiveStateClicked LiveState.State
     | LiveStateReceived (Result Http.Error LiveState.State)
     | MainSwitchStateMsg MainSwitchState.Msg
@@ -103,6 +107,12 @@ update msg model =
                     Lights.update msg model.lightsModel
             in
                 ( { model | lightsModel = newLightsModel }, Cmd.map LightMsg action )
+
+        RecentEventsMsg msg ->
+          let ( newRecentEventsModel, action ) =
+                RecentEvents.update msg model.recentEventsModel
+          in
+              ( { model | recentEventsModel = newRecentEventsModel }, Cmd.map RecentEventsMsg action )
 
         LiveStateClicked liveState ->
             ( model, setLiveState liveState )
@@ -167,6 +177,7 @@ initialize =
         , Cmd.map MainSwitchStateMsg MainSwitchState.load
         , Cmd.map LightMsg Lights.load
         , Cmd.map VacationModeMsg VacationMode.load
+        , Cmd.map RecentEventsMsg RecentEvents.load
         ]
 
 
@@ -328,6 +339,9 @@ view model =
                                 ]
                             , Grid.cell [ Grid.size Grid.Phone 4, Grid.size Grid.Tablet 8, Grid.size Grid.Desktop 4 ]
                                 [ Html.map LightMsg (Lights.view model.mdl model.lightsModel)
+                                ]
+                            , Grid.cell [ Grid.size Grid.Phone 4, Grid.size Grid.Tablet 8, Grid.size Grid.Desktop 4 ]
+                                [ Html.map RecentEventsMsg (RecentEvents.view model.mdl model.recentEventsModel)
                                 ]
                             ]
                         ]
