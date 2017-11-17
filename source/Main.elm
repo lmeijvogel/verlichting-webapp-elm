@@ -1,5 +1,7 @@
 module Main exposing (..)
 
+import Task
+import Date
 import Http
 import Html exposing (Html, div, span, text)
 import Html.Attributes
@@ -88,6 +90,8 @@ type Msg
     | HealNetworkRequestSent (Result Http.Error String)
     | Snackbar (Snackbar.Msg Msg)
     | SnackbarClicked
+    | InitDate
+    | DateReceived Date.Date
     | Mdl (Material.Msg Msg)
 
 
@@ -109,10 +113,11 @@ update msg model =
                 ( { model | lightsModel = newLightsModel }, Cmd.map LightMsg action )
 
         RecentEventsMsg msg ->
-          let ( newRecentEventsModel, action ) =
-                RecentEvents.update msg model.recentEventsModel
-          in
-              ( { model | recentEventsModel = newRecentEventsModel }, Cmd.map RecentEventsMsg action )
+            let
+                ( newRecentEventsModel, action ) =
+                    RecentEvents.update msg model.recentEventsModel
+            in
+                ( { model | recentEventsModel = newRecentEventsModel }, Cmd.map RecentEventsMsg action )
 
         LiveStateClicked liveState ->
             ( model, setLiveState liveState )
@@ -165,6 +170,16 @@ update msg model =
         SnackbarClicked ->
             ( model, Cmd.none )
 
+        InitDate ->
+            ( model, Task.perform DateReceived Date.now )
+
+        DateReceived date ->
+            let
+                newRecentEventsModel =
+                    RecentEvents.updateCurrentDate date model.recentEventsModel
+            in
+                ( { model | recentEventsModel = newRecentEventsModel }, Cmd.none )
+
         Mdl msg_ ->
             Material.update Mdl msg_ model
 
@@ -174,6 +189,7 @@ initialize =
     Cmd.batch
         [ Cmd.map ProgrammeMsg Programmes.load
         , getLiveState
+        , getCurrentDate
         , Cmd.map MainSwitchStateMsg MainSwitchState.load
         , Cmd.map LightMsg Lights.load
         , Cmd.map VacationModeMsg VacationMode.load
@@ -193,6 +209,11 @@ get decoder msg url =
 getLiveState : Cmd Msg
 getLiveState =
     get JsonDecoders.liveState LiveStateReceived "/my_zwave/live"
+
+
+getCurrentDate : Cmd Msg
+getCurrentDate =
+    Task.perform DateReceived (Date.now)
 
 
 setLiveState : LiveState.State -> Cmd Msg
