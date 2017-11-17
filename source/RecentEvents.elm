@@ -106,6 +106,7 @@ view mdl model =
             tr []
                 [ td [] [ text (dateToString model.currentDate event.time) ]
                 , td [] [ text event.event ]
+                , td [] [ text (Maybe.withDefault "" event.data) ]
                 ]
     in
         div []
