@@ -13,6 +13,7 @@
   },
   "scripts": {
     "watch": "chokidar source/ -c 'elm make --debug --warn --output=out/main.js source/Main.elm'",
+    "build": "elm-make source/Main.elm --yes --output out/main.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "Lennaert Meijvogel",
