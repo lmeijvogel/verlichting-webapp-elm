@@ -4,16 +4,19 @@
   "description": "Elm implementation of my lights manager",
   "main": "index.js",
   "dependencies": {
-    "elm": "^0.18.0",
-    "elm-format": "^0.6.1-alpha",
-    "webpack": "^3.4.1"
   },
   "devDependencies": {
-    "chokidar-cli": "^1.2.0"
+    "chokidar-cli": "^1.2.0",
+    "elm": "^0.18.0",
+    "elm-format": "^0.6.1-alpha",
+    "uglify-js": "^3.3.16",
+    "webpack": "^3.4.1"
   },
   "scripts": {
     "watch": "chokidar source/ -c 'elm make --debug --warn --output=out/main.js source/Main.elm'",
     "build": "elm-make source/Main.elm --yes --output out/main.js",
+    "uglify": "uglifyjs --screw-ie8 --mangle --output out/main.min.js -- out/main.js",
+
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "Lennaert Meijvogel",

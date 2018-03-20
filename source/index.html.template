@@ -12,8 +12,7 @@
   </head>
   <body style="background-color: #f2f2f2;">
     <div id="main"></div>
-    <% app = is_production ? fingerprinted_file("tmp/main.min.js") : 'main.js' %>
-    <script src="javascripts/<%= app %>"></script>
+    <script src="%%%src%%%"></script>
     <script>
       var node = document.getElementById('main');
       var app = Elm.Main.embed(node);
