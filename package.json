@@ -3,12 +3,10 @@
   "version": "1.0.0",
   "description": "Elm implementation of my lights manager",
   "main": "index.js",
-  "dependencies": {
-  },
   "devDependencies": {
     "chokidar-cli": "^1.2.0",
     "elm": "^0.18.0",
-    "elm-format": "^0.6.1-alpha",
+    "elm-format": "^0.8.5",
     "uglify-js": "^3.3.16",
     "webpack": "^3.4.1"
   },
