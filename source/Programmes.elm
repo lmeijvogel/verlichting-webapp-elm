@@ -1,18 +1,18 @@
-module Programmes exposing (Model, Msg, new, load, update, view)
+module Programmes exposing (Model, Msg, load, new, update, view)
 
 import Html exposing (Html, p, text)
 import Http
-import Json.Decode as Decode
-import Json.Decode exposing (..)
+import Json.Decode as Decode exposing (..)
 import Material
 import Material.Button as Button
 import Material.Card as Card
-import Material.Elevation as Elevation
 import Material.Color as Color
+import Material.Elevation as Elevation
 import Material.Icon as Icon
 import Material.List as MatList
-import Material.Typography as Typo
 import Material.Options as Options
+import Material.Typography as Typo
+
 
 
 -- MODEL --
@@ -71,7 +71,7 @@ update msg programmesModel =
             ( { programmesModel | availableProgrammes = availableProgrammes }, getCurrentProgramme )
 
         ProgrammesReceived (Err error) ->
-            ( { programmesModel | error = Just ("Could not retrieve programmes list: " ++ (toString error)) }, Cmd.none )
+            ( { programmesModel | error = Just ("Could not retrieve programmes list: " ++ toString error) }, Cmd.none )
 
         CurrentProgrammeReceived (Ok id) ->
             ( { programmesModel | currentProgramme = Just id }, Cmd.none )
@@ -114,9 +114,9 @@ availableProgrammes =
         convert tupleList =
             Decode.succeed (List.map tupleToProgramme tupleList)
     in
-        field "availableProgrammes" (keyValuePairs (string))
-            |> Decode.andThen convert
-            |> Decode.map List.reverse
+    field "availableProgrammes" (keyValuePairs string)
+        |> Decode.andThen convert
+        |> Decode.map List.reverse
 
 
 currentProgramme : Decoder String
@@ -133,7 +133,7 @@ activateProgramme programmeId =
         request =
             Http.post url Http.emptyBody activationResponse
     in
-        Http.send ActivationResponseReceived request
+    Http.send ActivationResponseReceived request
 
 
 activationResponse : Decoder PostProgrammeResult
@@ -143,10 +143,11 @@ activationResponse =
         decodeResult success =
             if success then
                 map Success (field "programme" string)
+
             else
                 Decode.succeed Error
     in
-        field "success" bool |> Decode.andThen decodeResult
+    field "success" bool |> Decode.andThen decodeResult
 
 
 load : Cmd Msg
@@ -165,7 +166,7 @@ get decoder msg url =
         request =
             Http.get url decoder
     in
-        Http.send msg request
+    Http.send msg request
 
 
 type alias Mdl =
@@ -186,7 +187,7 @@ view mdl programmesModel =
             [ MatList.ul []
                 (List.map (\programme -> programmeEntry programme mdl programmesModel.currentProgramme programmesModel.pendingProgramme) programmesModel.availableProgrammes)
             ]
-        , Card.actions [ Card.border, Options.css "vertical-align" "center", Options.css "text-align" "right", (Color.text Color.black) ]
+        , Card.actions [ Card.border, Options.css "vertical-align" "center", Options.css "text-align" "right", Color.text Color.black ]
             [ Button.render Mdl
                 [ 8, 1 ]
                 programmesModel.mdl
@@ -205,29 +206,31 @@ programmeEntry programme mdl currentProgramme pendingProgramme =
         extraButtonStyles =
             if currentProgramme == Just programme.id then
                 [ Button.ripple, Button.colored, Button.raised ]
+
             else if pendingProgramme == Just programme.id then
                 [ Button.ripple, Button.raised ]
+
             else
                 []
 
         buttonStyles =
             commonButtonStyles ++ extraButtonStyles
     in
-        compactListItem []
-            [ MatList.content
-                []
-                [ Button.render Mdl
-                    [ 0 ]
-                    mdl
-                    (List.concat
-                        [ [ Options.onClick (ProgrammeClicked programme)
-                          ]
-                        , buttonStyles
-                        ]
-                    )
-                    [ text programme.name ]
-                ]
+    compactListItem []
+        [ MatList.content
+            []
+            [ Button.render Mdl
+                [ 0 ]
+                mdl
+                (List.concat
+                    [ [ Options.onClick (ProgrammeClicked programme)
+                      ]
+                    , buttonStyles
+                    ]
+                )
+                [ text programme.name ]
             ]
+        ]
 
 
 compactListItem : List (Options.Property c m) -> List (Html m) -> Html m
