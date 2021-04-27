@@ -1,13 +1,17 @@
-module JsonDecoders exposing (liveState, healNetwork)
+module JsonDecoders exposing (csrfToken, healNetwork, liveState)
 
-import Json.Decode as Decode
-import Json.Decode exposing (..)
+import Json.Decode as Decode exposing (..)
 import LiveState
 
 
 healNetwork : Decoder String
 healNetwork =
     field "state" string
+
+
+csrfToken : Decoder String
+csrfToken =
+    field "csrf_token" string
 
 
 liveState : Decoder LiveState.State
@@ -19,10 +23,11 @@ liveState =
                 newState =
                     if state then
                         LiveState.Live
+
                     else
                         LiveState.Simulation
             in
-                Decode.succeed newState
+            Decode.succeed newState
     in
-        field "state" bool
-            |> Decode.andThen convert
+    field "state" bool
+        |> Decode.andThen convert

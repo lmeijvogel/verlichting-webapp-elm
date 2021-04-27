@@ -1,8 +1,8 @@
-module MainSwitchState exposing (Model, Msg(Enable, Disable), new, load, update, isEnabled)
+module MainSwitchState exposing (Model, Msg(Disable, Enable), isEnabled, load, new, update)
 
 import Http
-import Json.Decode as Decode
-import Json.Decode exposing (..)
+import Json.Decode as Decode exposing (..)
+import Json.Encode as Encode
 import Material
 
 
@@ -67,32 +67,39 @@ get decoder msg url =
         request =
             Http.get url decoder
     in
-        Http.send msg request
+    Http.send msg request
 
 
 load : Cmd Msg
 load =
-    get decodeState StateReceived "/my_zwave/main_switch"
+    get decodeState StateReceived "/my_zwave_new/main_switch"
 
 
 setState : State -> Cmd Msg
 setState newState =
     let
-        stateString =
-            case newState of
-                Disabled ->
-                    "false"
+        encodeJson : State -> Encode.Value
+        encodeJson state =
+            let
+                encodeState : State -> Bool
+                encodeState s =
+                    case s of
+                        Disabled ->
+                            False
 
-                _ ->
-                    "true"
+                        _ ->
+                            True
+            in
+            Encode.object
+                [ ( "state", Encode.bool (encodeState state) ) ]
 
         url =
-            "/my_zwave/main_switch/" ++ stateString
+            "/my_zwave_new/main_switch"
 
         request =
-            Http.post url Http.emptyBody decodeState
+            Http.post url (Http.jsonBody (encodeJson newState)) decodeState
     in
-        Http.send StateReceived request
+    Http.send StateReceived request
 
 
 decodeState : Decoder State
@@ -104,10 +111,11 @@ decodeState =
                 newState =
                     if state then
                         Enabled
+
                     else
                         Disabled
             in
-                Decode.succeed newState
+            Decode.succeed newState
     in
-        field "state" bool
-            |> Decode.andThen convert
+    field "state" bool
+        |> Decode.andThen convert

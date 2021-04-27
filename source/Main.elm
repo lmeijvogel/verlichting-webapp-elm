@@ -1,10 +1,15 @@
 module Main exposing (..)
 
-import Task
 import Date
-import Http
 import Html exposing (Html, div, span, text)
 import Html.Attributes
+import Http exposing (header)
+import Json.Decode exposing (Decoder)
+import JsonDecoders
+import Lights
+import LiveState
+import Login
+import MainSwitchState
 import Material
 import Material.Button as Button
 import Material.Color as Color
@@ -13,21 +18,16 @@ import Material.Helpers exposing (map1st, map2nd)
 import Material.Icon as Icon
 import Material.Layout as Layout
 import Material.List as MatList
-import Material.Spinner as Spinner
 import Material.Options as Options
 import Material.Scheme as Scheme
 import Material.Snackbar as Snackbar
+import Material.Spinner as Spinner
 import Material.Toggles as Toggles
 import Material.Typography as Typo
-import Json.Decode exposing (Decoder)
-import Lights
-import Login
-import LiveState
-import MainSwitchState
 import Programmes
 import RecentEvents
+import Task
 import VacationMode
-import JsonDecoders
 
 
 main : Program Never Model Msg
@@ -52,6 +52,7 @@ type alias Model =
     , vacationModeModel : VacationMode.Model
     , recentEventsModel : RecentEvents.Model
     , mainSwitchState : MainSwitchState.Model
+    , csrfToken : Maybe String
     , mdl : Material.Model
     , snackbar : Snackbar.Model Msg
     }
@@ -66,11 +67,37 @@ init =
       , vacationModeModel = VacationMode.new
       , recentEventsModel = RecentEvents.new
       , mainSwitchState = MainSwitchState.new
+      , csrfToken = Nothing
       , snackbar = Snackbar.model
       , mdl = Material.model
       }
     , Cmd.map LoginMsg Login.checkLoggedIn
     )
+
+
+setCsrfToken : Model -> String -> Model
+setCsrfToken model token =
+    let
+        newHeaders =
+            [ header "X-Csrf-Token" token ]
+
+        oldProgrammesModel =
+            model.programmesModel
+
+        newProgrammesModel =
+            { oldProgrammesModel | httpRequestHeaders = newHeaders }
+
+        oldLightsModel =
+            model.lightsModel
+
+        newLightsModel =
+            { oldLightsModel | httpRequestHeaders = newHeaders }
+    in
+    { model
+        | csrfToken = Just token
+        , programmesModel = newProgrammesModel
+        , lightsModel = newLightsModel
+    }
 
 
 
@@ -85,6 +112,7 @@ type Msg
     | RecentEventsMsg RecentEvents.Msg
     | LiveStateClicked LiveState.State
     | LiveStateReceived (Result Http.Error LiveState.State)
+    | CsrfTokenReceived (Result Http.Error String)
     | MainSwitchStateMsg MainSwitchState.Msg
     | HealNetwork
     | HealNetworkRequestSent (Result Http.Error String)
@@ -103,21 +131,21 @@ update msg model =
                 ( newProgrammesModel, action ) =
                     Programmes.update msg model.programmesModel
             in
-                ( { model | programmesModel = newProgrammesModel }, Cmd.map ProgrammeMsg action )
+            ( { model | programmesModel = newProgrammesModel }, Cmd.map ProgrammeMsg action )
 
         LightMsg msg ->
             let
                 ( newLightsModel, action ) =
                     Lights.update msg model.lightsModel
             in
-                ( { model | lightsModel = newLightsModel }, Cmd.map LightMsg action )
+            ( { model | lightsModel = newLightsModel }, Cmd.map LightMsg action )
 
         RecentEventsMsg msg ->
             let
                 ( newRecentEventsModel, action ) =
                     RecentEvents.update msg model.recentEventsModel
             in
-                ( { model | recentEventsModel = newRecentEventsModel }, Cmd.map RecentEventsMsg action )
+            ( { model | recentEventsModel = newRecentEventsModel }, Cmd.map RecentEventsMsg action )
 
         LiveStateClicked liveState ->
             ( model, setLiveState liveState )
@@ -128,6 +156,13 @@ update msg model =
         LiveStateReceived (Err _) ->
             ( { model | liveState = LiveState.Error }, Cmd.none )
 
+        CsrfTokenReceived (Ok csrfToken) ->
+            ( setCsrfToken model csrfToken, Cmd.none )
+
+        -- At least show an error
+        CsrfTokenReceived (Err _) ->
+            ( model, Cmd.none )
+
         LoginMsg msg ->
             let
                 ( newLoginModel, cmd, loginSuccessful ) =
@@ -136,24 +171,25 @@ update msg model =
                 nextCommand =
                     if loginSuccessful then
                         initialize
+
                     else
                         Cmd.map LoginMsg cmd
             in
-                ( { model | loginModel = newLoginModel }, nextCommand )
+            ( { model | loginModel = newLoginModel }, nextCommand )
 
         MainSwitchStateMsg msg ->
             let
                 ( newMainSwitchState, action ) =
                     MainSwitchState.update model.mainSwitchState msg
             in
-                ( { model | mainSwitchState = newMainSwitchState }, Cmd.map MainSwitchStateMsg action )
+            ( { model | mainSwitchState = newMainSwitchState }, Cmd.map MainSwitchStateMsg action )
 
         VacationModeMsg msg ->
             let
                 ( newVacationModeModel, action ) =
                     VacationMode.update msg model.vacationModeModel
             in
-                ( { model | vacationModeModel = newVacationModeModel }, Cmd.map VacationModeMsg action )
+            ( { model | vacationModeModel = newVacationModeModel }, Cmd.map VacationModeMsg action )
 
         HealNetwork ->
             ( model, healNetwork )
@@ -178,7 +214,7 @@ update msg model =
                 newRecentEventsModel =
                     RecentEvents.updateCurrentDate date model.recentEventsModel
             in
-                ( { model | recentEventsModel = newRecentEventsModel }, Cmd.none )
+            ( { model | recentEventsModel = newRecentEventsModel }, Cmd.none )
 
         Mdl msg_ ->
             Material.update Mdl msg_ model
@@ -188,6 +224,7 @@ initialize : Cmd Msg
 initialize =
     Cmd.batch
         [ Cmd.map ProgrammeMsg Programmes.load
+        , getCsrfToken
         , getLiveState
         , getCurrentDate
         , Cmd.map MainSwitchStateMsg MainSwitchState.load
@@ -203,7 +240,12 @@ get decoder msg url =
         request =
             Http.get url decoder
     in
-        Http.send msg request
+    Http.send msg request
+
+
+getCsrfToken : Cmd Msg
+getCsrfToken =
+    get JsonDecoders.csrfToken CsrfTokenReceived "/my_zwave_new/csrf_token"
 
 
 getLiveState : Cmd Msg
@@ -213,7 +255,7 @@ getLiveState =
 
 getCurrentDate : Cmd Msg
 getCurrentDate =
-    Task.perform DateReceived (Date.now)
+    Task.perform DateReceived Date.now
 
 
 setLiveState : LiveState.State -> Cmd Msg
@@ -233,7 +275,7 @@ setLiveState newState =
         request =
             Http.post url Http.emptyBody JsonDecoders.liveState
     in
-        Http.send LiveStateReceived request
+    Http.send LiveStateReceived request
 
 
 healNetwork : Cmd Msg
@@ -245,7 +287,7 @@ healNetwork =
         request =
             Http.post url Http.emptyBody JsonDecoders.healNetwork
     in
-        Http.send HealNetworkRequestSent request
+    Http.send HealNetworkRequestSent request
 
 
 showNetworkRequestSent : Model -> Result Http.Error String -> ( Model, Cmd Msg )
@@ -258,7 +300,7 @@ showNetworkRequestSent model result =
                     msg
 
                 Err msg ->
-                    "Error: " ++ (toString msg)
+                    "Error: " ++ toString msg
 
         snackContents : Snackbar.Contents Msg
         snackContents =
@@ -276,7 +318,7 @@ showNetworkRequestSent model result =
         model_ =
             { model | snackbar = snackbar_ }
     in
-        ( model_, Cmd.batch [ effect ] )
+    ( model_, Cmd.batch [ effect ] )
 
 
 
@@ -294,85 +336,99 @@ view model =
                 LiveState.Simulation ->
                     Color.Teal
 
-                _ ->
+                LiveState.Error ->
+                    Color.Red
+
+                LiveState.Unknown ->
                     Color.BlueGrey
 
         scheduleIcon =
             if VacationMode.isEnabled model.vacationModeModel then
                 [ Icon.i "schedule" ]
+
             else
                 []
 
         syncDisabledIcon =
             if model.liveState == LiveState.Live then
                 []
+
             else
                 [ Icon.i "sync_disabled" ]
 
         indeterminateCheckboxIcon =
             if MainSwitchState.isEnabled model.mainSwitchState then
                 []
+
             else
                 [ Icon.i "indeterminate_check_box" ]
 
+        csrfErrorIndicator =
+            if model.csrfToken == Nothing then
+                [ span [] [ text "!CSRF!" ] ]
+
+            else
+                []
+
         icons =
-            scheduleIcon ++ syncDisabledIcon ++ indeterminateCheckboxIcon
+            scheduleIcon ++ syncDisabledIcon ++ indeterminateCheckboxIcon ++ csrfErrorIndicator
     in
-        (Layout.render Mdl
-            model.mdl
-            [ Layout.fixedHeader
-            ]
-            { header =
-                [ Layout.row [ Typo.title ]
-                    [ div [ Html.Attributes.style [ ( "height", "100%" ), ( "display", "flex" ), ( "flex-direction", "row" ), ( "align-items", "center" ) ] ]
-                        [ span
-                            [ Html.Attributes.style [ ( "margin-right", "20px" ) ] ]
-                            [ text "Verlichting" ]
-                        , span [ Html.Attributes.style [ ( "display", "flex" ), ( "align-items", "center" ) ] ] icons
-                        ]
+    Layout.render Mdl
+        model.mdl
+        [ Layout.fixedHeader
+        ]
+        { header =
+            [ Layout.row [ Typo.title ]
+                [ div [ Html.Attributes.style [ ( "height", "100%" ), ( "display", "flex" ), ( "flex-direction", "row" ), ( "align-items", "center" ) ] ]
+                    [ span
+                        [ Html.Attributes.style [ ( "margin-right", "20px" ) ] ]
+                        [ text "Verlichting" ]
+                    , span [ Html.Attributes.style [ ( "display", "flex" ), ( "align-items", "center" ) ] ] icons
                     ]
                 ]
-            , drawer = [ drawer model ]
-            , tabs = ( [], [] )
-            , main =
-                [ if Login.isLoginPending model.loginModel then
-                    div []
-                        [ Grid.grid [ Options.center ]
-                            [ Grid.cell
-                                [ Options.center
-                                , Grid.size Grid.Phone 4
-                                , Grid.size Grid.Tablet 8
-                                , Grid.size Grid.Desktop 12
-                                ]
-                                [ Spinner.spinner
-                                    [ Spinner.active True ]
-                                ]
+            ]
+        , drawer = [ drawer model ]
+        , tabs = ( [], [] )
+        , main =
+            [ if Login.isLoginPending model.loginModel then
+                div []
+                    [ Grid.grid [ Options.center ]
+                        [ Grid.cell
+                            [ Options.center
+                            , Grid.size Grid.Phone 4
+                            , Grid.size Grid.Tablet 8
+                            , Grid.size Grid.Desktop 12
+                            ]
+                            [ Spinner.spinner
+                                [ Spinner.active True ]
                             ]
                         ]
-                  else if Login.isLoggedIn model.loginModel then
-                    div []
-                        [ Grid.grid []
-                            [ Grid.cell [ Grid.size Grid.Phone 4, Grid.size Grid.Tablet 8, Grid.size Grid.Desktop 4 ]
-                                [ Html.map ProgrammeMsg (Programmes.view model.mdl model.programmesModel)
-                                ]
-                            , Grid.cell [ Grid.size Grid.Phone 4, Grid.size Grid.Tablet 8, Grid.size Grid.Desktop 4 ]
-                                [ Html.map VacationModeMsg (VacationMode.view model.mdl model.vacationModeModel)
-                                ]
-                            , Grid.cell [ Grid.size Grid.Phone 4, Grid.size Grid.Tablet 8, Grid.size Grid.Desktop 4 ]
-                                [ Html.map LightMsg (Lights.view model.mdl model.lightsModel)
-                                ]
-                            , Grid.cell [ Grid.size Grid.Phone 4, Grid.size Grid.Tablet 8, Grid.size Grid.Desktop 4 ]
-                                [ Html.map RecentEventsMsg (RecentEvents.view model.mdl model.recentEventsModel)
-                                ]
+                    ]
+
+              else if Login.isLoggedIn model.loginModel then
+                div []
+                    [ Grid.grid []
+                        [ Grid.cell [ Grid.size Grid.Phone 4, Grid.size Grid.Tablet 8, Grid.size Grid.Desktop 4 ]
+                            [ Html.map ProgrammeMsg (Programmes.view model.mdl model.programmesModel)
+                            ]
+                        , Grid.cell [ Grid.size Grid.Phone 4, Grid.size Grid.Tablet 8, Grid.size Grid.Desktop 4 ]
+                            [ Html.map VacationModeMsg (VacationMode.view model.mdl model.vacationModeModel)
+                            ]
+                        , Grid.cell [ Grid.size Grid.Phone 4, Grid.size Grid.Tablet 8, Grid.size Grid.Desktop 4 ]
+                            [ Html.map LightMsg (Lights.view model.mdl model.lightsModel)
+                            ]
+                        , Grid.cell [ Grid.size Grid.Phone 4, Grid.size Grid.Tablet 8, Grid.size Grid.Desktop 4 ]
+                            [ Html.map RecentEventsMsg (RecentEvents.view model.mdl model.recentEventsModel)
                             ]
                         ]
-                  else
-                    Html.map LoginMsg (Login.view model.loginModel)
-                , Snackbar.view model.snackbar |> Html.map Snackbar
-                ]
-            }
-        )
-            |> Scheme.topWithScheme mainColor Color.Red
+                    ]
+
+              else
+                Html.map LoginMsg (Login.view model.loginModel)
+            , Snackbar.view model.snackbar |> Html.map Snackbar
+            ]
+        }
+        |> Scheme.topWithScheme mainColor Color.Red
 
 
 drawer : Model -> Html Msg
@@ -381,55 +437,57 @@ drawer model =
         newLiveState =
             if model.liveState == LiveState.Live then
                 LiveState.Simulation
+
             else
                 LiveState.Live
 
         newMainSwitchAction =
             if MainSwitchState.isEnabled model.mainSwitchState then
                 MainSwitchState.Disable
+
             else
                 MainSwitchState.Enable
     in
-        div []
-            [ MatList.ul []
-                [ MatList.li []
-                    [ MatList.content
-                        []
-                        [ Toggles.checkbox Mdl
-                            [ 0 ]
-                            model.mdl
-                            [ Toggles.value (model.liveState == LiveState.Live)
-                            , Options.onToggle (LiveStateClicked newLiveState)
-                            ]
-                            [ text "Web Live" ]
+    div []
+        [ MatList.ul []
+            [ MatList.li []
+                [ MatList.content
+                    []
+                    [ Toggles.checkbox Mdl
+                        [ 0 ]
+                        model.mdl
+                        [ Toggles.value (model.liveState == LiveState.Live)
+                        , Options.onToggle (LiveStateClicked newLiveState)
                         ]
+                        [ text "Web Live" ]
                     ]
-                , MatList.li []
-                    [ MatList.content
-                        []
-                        [ Toggles.checkbox Mdl
-                            [ 1 ]
-                            model.mdl
-                            [ Toggles.value (MainSwitchState.isEnabled model.mainSwitchState)
-                            , Options.onToggle (MainSwitchStateMsg newMainSwitchAction)
-                            ]
-                            [ text "Main switch enabled" ]
+                ]
+            , MatList.li []
+                [ MatList.content
+                    []
+                    [ Toggles.checkbox Mdl
+                        [ 1 ]
+                        model.mdl
+                        [ Toggles.value (MainSwitchState.isEnabled model.mainSwitchState)
+                        , Options.onToggle (MainSwitchStateMsg newMainSwitchAction)
                         ]
+                        [ text "Main switch enabled" ]
                     ]
-                , MatList.li []
-                    [ MatList.content
-                        []
-                        [ Button.render Mdl
-                            [ 2 ]
-                            model.mdl
-                            [ Button.raised
-                            , Options.onClick HealNetwork
-                            ]
-                            [ text "Heal network" ]
+                ]
+            , MatList.li []
+                [ MatList.content
+                    []
+                    [ Button.render Mdl
+                        [ 2 ]
+                        model.mdl
+                        [ Button.raised
+                        , Options.onClick HealNetwork
                         ]
+                        [ text "Heal network" ]
                     ]
                 ]
             ]
+        ]
 
 
 subscriptions : Model -> Sub Msg

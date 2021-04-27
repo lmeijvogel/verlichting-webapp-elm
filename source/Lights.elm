@@ -1,7 +1,7 @@
-module Lights exposing (LightsModel, Msg, new, load, update, view)
+module Lights exposing (LightsModel, Msg, load, new, update, view)
 
-import Http
 import Html exposing (Html, div, p, text)
+import Http
 import Json.Decode exposing (..)
 import Material
 import Material.Button as Button
@@ -15,6 +15,7 @@ import Material.Options as Options
 import Material.Slider as Slider
 import Material.Toggles as Toggles
 import Material.Typography as Typo
+
 
 
 -- MODEL --
@@ -32,6 +33,7 @@ type alias LightsModel =
     { lights : List Light
     , editingLightId : Maybe Int
     , error : Maybe String
+    , httpRequestHeaders : List Http.Header
     , mdl : Material.Model
     }
 
@@ -41,6 +43,7 @@ new =
     { lights = []
     , editingLightId = Nothing
     , error = Nothing
+    , httpRequestHeaders = []
     , mdl = Material.model
     }
 
@@ -77,7 +80,7 @@ update msg lightsModel =
             ( { lightsModel | error = Just "Error receiving lights" }, Cmd.none )
 
         ShowLight light ->
-            ( { lightsModel | editingLightId = (Maybe.map (\l -> l.id) light) }, Cmd.none )
+            ( { lightsModel | editingLightId = Maybe.map (\l -> l.id) light }, Cmd.none )
 
         {- The `saveAfter` here is a workaround for a usability "quirk":
            - When a Slider is used, we don't want to bombard the server with
@@ -93,22 +96,23 @@ update msg lightsModel =
 
                 nextCommand =
                     if saveAfter then
-                        (save newLight)
+                        save newLight
+
                     else
                         Cmd.none
 
                 newLights =
-                    (List.map
+                    List.map
                         (\l ->
                             if l.id == light.id then
                                 newLight
+
                             else
                                 l
                         )
                         lightsModel.lights
-                    )
             in
-                ( { lightsModel | lights = newLights }, nextCommand )
+            ( { lightsModel | lights = newLights }, nextCommand )
 
         Save light ->
             ( lightsModel, save light )
@@ -138,7 +142,7 @@ decodeLights =
                     ]
                 )
     in
-        field "lights" (list toLight)
+    field "lights" (list toLight)
 
 
 decodeChangeResponse : Decoder LightValue
@@ -153,12 +157,12 @@ load : Cmd Msg
 load =
     let
         url =
-            "/my_zwave/current_lights"
+            "/my_zwave_new/lights"
 
         request =
             Http.get url decodeLights
     in
-        Http.send Received request
+    Http.send Received request
 
 
 save : Light -> Cmd Msg
@@ -171,18 +175,19 @@ save light =
                         stateString =
                             if state then
                                 "on"
+
                             else
                                 "off"
                     in
-                        "/my_zwave/light/" ++ (toString light.id) ++ "/switch/" ++ stateString
+                    "/my_zwave/light/" ++ toString light.id ++ "/switch/" ++ stateString
 
                 Level intensity ->
-                    "/my_zwave/light/" ++ (toString light.id) ++ "/level/" ++ (toString intensity)
+                    "/my_zwave_new/lights/" ++ toString light.id ++ "/level/" ++ toString intensity
 
         request =
             Http.post url Http.emptyBody decodeChangeResponse
     in
-        Http.send ChangeAcknowledged request
+    Http.send ChangeAcknowledged request
 
 
 newIntensityRequested : Light -> Float -> Msg
@@ -203,12 +208,12 @@ view mdl model =
                 light =
                     List.filter (\l -> l.id == editingLightId) model.lights |> List.head
             in
-                case light of
-                    Just light ->
-                        singleLightCard light model
+            case light of
+                Just light ->
+                    singleLightCard light model
 
-                    Nothing ->
-                        text "Unknown light selected!"
+                Nothing ->
+                    text "Unknown light selected!"
 
         Nothing ->
             Card.view [ Elevation.e2 ]
@@ -219,7 +224,7 @@ view mdl model =
                     [ MatList.ul []
                         (List.map (\light -> lightEntry light) model.lights)
                     ]
-                , Card.actions [ Card.border, Options.css "vertical-align" "center", Options.css "text-align" "right", (Color.text Color.black) ]
+                , Card.actions [ Card.border, Options.css "vertical-align" "center", Options.css "text-align" "right", Color.text Color.black ]
                     [ Button.render Mdl
                         [ 8, 1 ]
                         model.mdl
@@ -278,14 +283,16 @@ lightEntry light =
                 State state ->
                     if state then
                         "On"
+
                     else
                         "-"
 
                 Level level ->
                     if level == 0 then
                         "-"
+
                     else
-                        (toString level)
+                        toString level
 
         chipBackgroundColor =
             case valueDisplay of
@@ -311,24 +318,24 @@ lightEntry light =
                 _ ->
                     Color.black
     in
-        compactListItem []
-            [ MatList.content []
-                [ Chip.span
-                    [ Options.css "width" "100%"
-                    , Color.background (chipBackgroundColor)
-                    , Options.onClick (ShowLight (Just light))
+    compactListItem []
+        [ MatList.content []
+            [ Chip.span
+                [ Options.css "width" "100%"
+                , Color.background chipBackgroundColor
+                , Options.onClick (ShowLight (Just light))
+                ]
+                [ Chip.contact Html.span
+                    [ Color.background valueBackgroundColor
+                    , Color.text valueForegroundColor
                     ]
-                    [ Chip.contact Html.span
-                        [ Color.background valueBackgroundColor
-                        , Color.text valueForegroundColor
-                        ]
-                        [ text valueDisplay ]
-                    , Chip.content []
-                        [ text light.displayName
-                        ]
+                    [ text valueDisplay ]
+                , Chip.content []
+                    [ text light.displayName
                     ]
                 ]
             ]
+        ]
 
 
 compactListItem : List (Options.Property c m) -> List (Html m) -> Html m

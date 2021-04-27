@@ -23,6 +23,7 @@ type alias Model =
     , currentProgramme : Maybe String
     , pendingProgramme : Maybe String
     , error : Maybe String
+    , httpRequestHeaders : List Http.Header
     , mdl : Material.Model
     }
 
@@ -33,6 +34,7 @@ new =
     , currentProgramme = Nothing
     , pendingProgramme = Nothing
     , error = Nothing
+    , httpRequestHeaders = []
     , mdl = Material.model
     }
 
@@ -80,7 +82,7 @@ update msg programmesModel =
             ( { programmesModel | error = Just "Could not retrieve current programme" }, Cmd.none )
 
         ProgrammeClicked programme ->
-            ( { programmesModel | pendingProgramme = Just programme.id }, activateProgramme programme.id )
+            ( { programmesModel | pendingProgramme = Just programme.id }, activateProgramme programmesModel programme.id )
 
         ActivationResponseReceived (Ok result) ->
             case result of
@@ -106,32 +108,36 @@ update msg programmesModel =
 availableProgrammes : Decoder (List Programme)
 availableProgrammes =
     let
-        tupleToProgramme : ( String, String ) -> Programme
-        tupleToProgramme ( id, name ) =
-            Programme id name
-
-        convert : List ( String, String ) -> Decoder (List Programme)
-        convert tupleList =
-            Decode.succeed (List.map tupleToProgramme tupleList)
+        programmeDecoder : Decoder Programme
+        programmeDecoder =
+            Decode.map2 Programme
+                (field "id" string)
+                (field "name" string)
     in
-    field "availableProgrammes" (keyValuePairs string)
-        |> Decode.andThen convert
-        |> Decode.map List.reverse
+    field "programmes" (list programmeDecoder)
 
 
-currentProgramme : Decoder String
-currentProgramme =
-    field "programme" string
+currentProgrammeId : Decoder String
+currentProgrammeId =
+    field "id" string
 
 
-activateProgramme : String -> Cmd Msg
-activateProgramme programmeId =
+activateProgramme : Model -> String -> Cmd Msg
+activateProgramme model programmeId =
     let
         url =
-            "/my_zwave/programme/" ++ programmeId ++ "/start"
+            "/my_zwave_new/programmes/" ++ programmeId ++ "/start"
 
         request =
-            Http.post url Http.emptyBody activationResponse
+            Http.request
+                { method = "POST"
+                , headers = model.httpRequestHeaders
+                , url = url
+                , body = Http.emptyBody
+                , timeout = Nothing
+                , expect = Http.expectJson activationResponse
+                , withCredentials = False
+                }
     in
     Http.send ActivationResponseReceived request
 
@@ -152,12 +158,12 @@ activationResponse =
 
 load : Cmd Msg
 load =
-    get availableProgrammes ProgrammesReceived "/my_zwave/available_programmes"
+    get availableProgrammes ProgrammesReceived "/my_zwave_new/programmes"
 
 
 getCurrentProgramme : Cmd Msg
 getCurrentProgramme =
-    get currentProgramme CurrentProgrammeReceived "/my_zwave/current_programme"
+    get currentProgrammeId CurrentProgrammeReceived "/my_zwave_new/programmes/current"
 
 
 get : Decoder a -> (Result Http.Error a -> Msg) -> String -> Cmd Msg
