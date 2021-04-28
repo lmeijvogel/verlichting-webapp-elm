@@ -1,11 +1,11 @@
-module RecentEvents exposing (Model, Msg, load, new, update, view, updateCurrentDate)
+module RecentEvents exposing (Model, Msg, load, new, update, updateCurrentDate, view)
 
 import Date
-import Html exposing (Html, div, text, table, tbody, th, tr, td)
+import DateToString exposing (dateToString)
+import Html exposing (Html, div, table, tbody, td, text, th, tr)
 import Http
 import Json.Decode as JD exposing (..)
 import Material
-import DateToString exposing (dateToString)
 
 
 type alias Model =
@@ -58,12 +58,12 @@ load : Cmd Msg
 load =
     let
         url =
-            "/my_zwave/latest_events"
+            "/my_zwave/events"
 
         request =
             Http.get url decodeRecentEvents
     in
-        Http.send Received request
+    Http.send Received request
 
 
 decodeRecentEvents : Decoder (List Event)
@@ -81,13 +81,13 @@ decodeRecentEvents =
         date =
             string |> andThen convert
     in
-        list
-            (JD.map4 Event
-                (maybe (field "initiator" string))
-                (field "event" string)
-                (maybe (field "data" string))
-                (field "time" date)
-            )
+    list
+        (JD.map4 Event
+            (maybe (field "initiator" string))
+            (field "event" string)
+            (maybe (field "data" string))
+            (field "time" date)
+        )
 
 
 view : Material.Model -> Model -> Html Msg
@@ -109,10 +109,10 @@ view mdl model =
                 , td [] [ text (Maybe.withDefault "" event.data) ]
                 ]
     in
-        div []
-            [ table []
-                [ tbody []
-                    (List.map messageToLi model.messages)
-                ]
-            , errorDiv
+    div []
+        [ table []
+            [ tbody []
+                (List.map messageToLi model.messages)
             ]
+        , errorDiv
+        ]

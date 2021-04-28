@@ -282,7 +282,7 @@ healNetwork : Cmd Msg
 healNetwork =
     let
         url =
-            "/my_zwave/heal_network"
+            "/my_zwave/debug/heal_network"
 
         request =
             Http.post url Http.emptyBody JsonDecoders.healNetwork
