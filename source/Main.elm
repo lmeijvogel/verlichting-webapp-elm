@@ -8,7 +8,6 @@ import Json.Decode exposing (Decoder)
 import JsonDecoders
 import Lights
 import LiveState
-import Login
 import MainSwitchState
 import Material
 import Material.Button as Button
@@ -21,7 +20,6 @@ import Material.List as MatList
 import Material.Options as Options
 import Material.Scheme as Scheme
 import Material.Snackbar as Snackbar
-import Material.Spinner as Spinner
 import Material.Toggles as Toggles
 import Material.Typography as Typo
 import Programmes
@@ -45,8 +43,7 @@ main =
 
 
 type alias Model =
-    { loginModel : Login.Model
-    , liveState : LiveState.State
+    { liveState : LiveState.State
     , programmesModel : Programmes.Model
     , lightsModel : Lights.LightsModel
     , vacationModeModel : VacationMode.Model
@@ -60,8 +57,7 @@ type alias Model =
 
 init : ( Model, Cmd Msg )
 init =
-    ( { loginModel = Login.new
-      , liveState = LiveState.Unknown
+    ( { liveState = LiveState.Unknown
       , programmesModel = Programmes.new
       , lightsModel = Lights.new
       , vacationModeModel = VacationMode.new
@@ -71,7 +67,7 @@ init =
       , snackbar = Snackbar.model
       , mdl = Material.model
       }
-    , Cmd.map LoginMsg Login.checkLoggedIn
+    , initialize
     )
 
 
@@ -105,8 +101,7 @@ setCsrfToken model token =
 
 
 type Msg
-    = LoginMsg Login.Msg
-    | ProgrammeMsg Programmes.Msg
+    = ProgrammeMsg Programmes.Msg
     | VacationModeMsg VacationMode.Msg
     | LightMsg Lights.Msg
     | RecentEventsMsg RecentEvents.Msg
@@ -162,20 +157,6 @@ update msg model =
         -- At least show an error
         CsrfTokenReceived (Err _) ->
             ( model, Cmd.none )
-
-        LoginMsg msg ->
-            let
-                ( newLoginModel, cmd, loginSuccessful ) =
-                    Login.update msg model.loginModel
-
-                nextCommand =
-                    if loginSuccessful then
-                        initialize
-
-                    else
-                        Cmd.map LoginMsg cmd
-            in
-            ( { model | loginModel = newLoginModel }, nextCommand )
 
         MainSwitchStateMsg msg ->
             let
@@ -390,41 +371,22 @@ view model =
         , drawer = [ drawer model ]
         , tabs = ( [], [] )
         , main =
-            [ if Login.isLoginPending model.loginModel then
-                div []
-                    [ Grid.grid [ Options.center ]
-                        [ Grid.cell
-                            [ Options.center
-                            , Grid.size Grid.Phone 4
-                            , Grid.size Grid.Tablet 8
-                            , Grid.size Grid.Desktop 12
-                            ]
-                            [ Spinner.spinner
-                                [ Spinner.active True ]
-                            ]
+            [ div []
+                [ Grid.grid []
+                    [ Grid.cell [ Grid.size Grid.Phone 4, Grid.size Grid.Tablet 8, Grid.size Grid.Desktop 4 ]
+                        [ Html.map ProgrammeMsg (Programmes.view model.mdl model.programmesModel)
+                        ]
+                    , Grid.cell [ Grid.size Grid.Phone 4, Grid.size Grid.Tablet 8, Grid.size Grid.Desktop 4 ]
+                        [ Html.map VacationModeMsg (VacationMode.view model.mdl model.vacationModeModel)
+                        ]
+                    , Grid.cell [ Grid.size Grid.Phone 4, Grid.size Grid.Tablet 8, Grid.size Grid.Desktop 4 ]
+                        [ Html.map LightMsg (Lights.view model.mdl model.lightsModel)
+                        ]
+                    , Grid.cell [ Grid.size Grid.Phone 4, Grid.size Grid.Tablet 8, Grid.size Grid.Desktop 4 ]
+                        [ Html.map RecentEventsMsg (RecentEvents.view model.mdl model.recentEventsModel)
                         ]
                     ]
-
-              else if Login.isLoggedIn model.loginModel then
-                div []
-                    [ Grid.grid []
-                        [ Grid.cell [ Grid.size Grid.Phone 4, Grid.size Grid.Tablet 8, Grid.size Grid.Desktop 4 ]
-                            [ Html.map ProgrammeMsg (Programmes.view model.mdl model.programmesModel)
-                            ]
-                        , Grid.cell [ Grid.size Grid.Phone 4, Grid.size Grid.Tablet 8, Grid.size Grid.Desktop 4 ]
-                            [ Html.map VacationModeMsg (VacationMode.view model.mdl model.vacationModeModel)
-                            ]
-                        , Grid.cell [ Grid.size Grid.Phone 4, Grid.size Grid.Tablet 8, Grid.size Grid.Desktop 4 ]
-                            [ Html.map LightMsg (Lights.view model.mdl model.lightsModel)
-                            ]
-                        , Grid.cell [ Grid.size Grid.Phone 4, Grid.size Grid.Tablet 8, Grid.size Grid.Desktop 4 ]
-                            [ Html.map RecentEventsMsg (RecentEvents.view model.mdl model.recentEventsModel)
-                            ]
-                        ]
-                    ]
-
-              else
-                Html.map LoginMsg (Login.view model.loginModel)
+                ]
             , Snackbar.view model.snackbar |> Html.map Snackbar
             ]
         }
