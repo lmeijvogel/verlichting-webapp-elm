@@ -245,7 +245,7 @@ get decoder msg url =
 
 getCsrfToken : Cmd Msg
 getCsrfToken =
-    get JsonDecoders.csrfToken CsrfTokenReceived "/my_zwave_new/csrf_token"
+    get JsonDecoders.csrfToken CsrfTokenReceived "/my_zwave/csrf_token"
 
 
 getLiveState : Cmd Msg

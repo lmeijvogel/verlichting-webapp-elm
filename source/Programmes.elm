@@ -126,7 +126,7 @@ activateProgramme : Model -> String -> Cmd Msg
 activateProgramme model programmeId =
     let
         url =
-            "/my_zwave_new/programmes/" ++ programmeId ++ "/start"
+            "/my_zwave/programmes/" ++ programmeId ++ "/start"
 
         request =
             Http.request
@@ -158,12 +158,12 @@ activationResponse =
 
 load : Cmd Msg
 load =
-    get availableProgrammes ProgrammesReceived "/my_zwave_new/programmes"
+    get availableProgrammes ProgrammesReceived "/my_zwave/programmes"
 
 
 getCurrentProgramme : Cmd Msg
 getCurrentProgramme =
-    get currentProgrammeId CurrentProgrammeReceived "/my_zwave_new/programmes/current"
+    get currentProgrammeId CurrentProgrammeReceived "/my_zwave/programmes/current"
 
 
 get : Decoder a -> (Result Http.Error a -> Msg) -> String -> Cmd Msg

@@ -157,7 +157,7 @@ load : Cmd Msg
 load =
     let
         url =
-            "/my_zwave_new/lights"
+            "/my_zwave/lights"
 
         request =
             Http.get url decodeLights
@@ -182,7 +182,7 @@ save light =
                     "/my_zwave/light/" ++ toString light.id ++ "/switch/" ++ stateString
 
                 Level intensity ->
-                    "/my_zwave_new/lights/" ++ toString light.id ++ "/level/" ++ toString intensity
+                    "/my_zwave/lights/" ++ toString light.id ++ "/level/" ++ toString intensity
 
         request =
             Http.post url Http.emptyBody decodeChangeResponse

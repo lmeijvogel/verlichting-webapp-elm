@@ -254,7 +254,7 @@ sendNewVacationModeState model state =
                 |> Http.jsonBody
 
         url =
-            "/my_zwave_new/vacation_mode"
+            "/my_zwave/vacation_mode"
 
         ( defaultStartTime, defaultEndTime ) =
             case state of
@@ -274,7 +274,7 @@ load : Cmd Msg
 load =
     let
         url =
-            "/my_zwave_new/vacation_mode"
+            "/my_zwave/vacation_mode"
 
         request =
             Http.get url (decodeVacationMode (TimeOfDay 18 30) (TimeOfDay 22 30))

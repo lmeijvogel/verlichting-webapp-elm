@@ -72,7 +72,7 @@ get decoder msg url =
 
 load : Cmd Msg
 load =
-    get decodeState StateReceived "/my_zwave_new/main_switch"
+    get decodeState StateReceived "/my_zwave/main_switch"
 
 
 setState : State -> Cmd Msg
@@ -94,7 +94,7 @@ setState newState =
                 [ ( "state", Encode.bool (encodeState state) ) ]
 
         url =
-            "/my_zwave_new/main_switch"
+            "/my_zwave/main_switch"
 
         request =
             Http.post url (Http.jsonBody (encodeJson newState)) decodeState
